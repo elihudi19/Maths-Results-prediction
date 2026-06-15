@@ -47,7 +47,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-st.title("Mwanza Mathematics Performance Predictor")
+st.title("       NECTA(CSEE) MATHEMATICS PERFOMANCE PREDICTOR           ")
 st.write(
     "Enter a student's details below to predict whether they will "
     "**Pass** or **Fail** the NECTA Form Four Mathematics examination, "
@@ -157,12 +157,12 @@ if predict_clicked:
     if prediction == 0:
         if prob_pass >= 0.40:
             st.warning(
-                "The student is at **MODERATE** risk of failing — "
+                "The student is at **MODERATE** risk of failing - "
                 "targeted support can turn this around."
             )
         else:
             st.error(
-                "The student is at **HIGH** risk of failing — "
+                "The student is at **HIGH** risk of failing - "
                 "urgent intervention is needed."
             )
 
@@ -177,7 +177,7 @@ if predict_clicked:
     else:
         if prob_pass >= 0.80:
             st.success(
-                "The student is **highly likely to pass** — "
+                "The student is **highly likely to pass** - "
                 "keep up the excellent work!"
             )
         else:
