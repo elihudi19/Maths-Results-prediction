@@ -182,7 +182,7 @@ if predict_clicked:
             )
         else:
             st.info(
-                "The student is **likely to pass** — "
+                "The student is **likely to pass** - "
                 "maintain current effort to stay on track."
             )
 
