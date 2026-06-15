@@ -91,7 +91,6 @@ with col1:
     teacher_student_ratio = st.number_input(
         "Teacher-to-Student Ratio (1 : N)",
         min_value=1,
-        max_value=300,
         value=45,
         step=1,
         help="Number of students per teacher, e.g. 45 means 1 teacher per 45 students.",
