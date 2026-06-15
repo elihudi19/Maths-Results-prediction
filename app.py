@@ -65,7 +65,7 @@ if artifacts is None:
     st.stop()
 
 model = artifacts["model"]
-model_name = artifacts["model_name"]
+model_name = artifacts.get("model_name", "Unknown Model")
 le_school = artifacts["le_school"]
 oe_mock = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
