@@ -47,7 +47,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-st.title("📊 Mwanza Mathematics Performance Predictor")
+st.title("Mwanza Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
     "**Pass** or **Fail** the NECTA Form Four Mathematics examination, "
@@ -65,7 +65,7 @@ if artifacts is None:
     st.stop()
 
 model = artifacts["model"]
-model_name = artifacts["model_name"]
+best_model = artifacts["best_model"]
 le_school = artifacts["le_school"]
 oe_mock = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
@@ -139,9 +139,9 @@ if predict_clicked:
     summary_cols[2].metric("Mock Exam Grade", mock_grade)
 
     if prediction == 1:
-        st.success(f"✅ PREDICTION: PASS  (Model used: {model_name})")
+        st.success(f" PREDICTION: PASS  (Model used: {model_name})")
     else:
-        st.error(f"❌ PREDICTION: FAIL  (Model used: {model_name})")
+        st.error(f" PREDICTION: FAIL  (Model used: {model_name})")
 
     prob_cols = st.columns(2)
     prob_cols[0].metric("Probability of Pass", f"{prob_pass * 100:.1f}%")
