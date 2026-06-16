@@ -1,28 +1,6 @@
-"""
-app.py
-======
-Streamlit app for the Mwanza Mathematics Performance Predictive
-Model.
-
-The user enters:
-    - Teacher-to-Student Ratio
-    - School Type (Government / Private)
-    - Mock Exam Grade (A, B, C, D, F)
-
-After clicking "Enter", the app shows:
-    - The predicted NECTA result (Pass / Fail)
-    - The probability of passing / failing
-    - Personalised suggestions based on the prediction
-
-Run with:
-    streamlit run app.py
-
-Requires "model_artifacts.pkl" in the same folder, which is
-created by running `python train_model.py` once.
-"""
-
 import os
 import pandas as pd
+import numpy as np
 import streamlit as st
 import joblib
 
@@ -34,54 +12,76 @@ st.set_page_config(
     layout="centered",
 )
 
-
-# --------------------------------------------------------------
-# Load the trained model + encoders (cached so it loads once)
-# --------------------------------------------------------------
 @st.cache_resource
 def load_artifacts():
     if not os.path.exists(MODEL_FILE):
         return None
     return joblib.load(MODEL_FILE)
 
-
 artifacts = load_artifacts()
 
-st.title("        MATHEMATICS PERFOMANCE PREDICTOR           ")
+st.title("📊 Mwanza Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
-    "**Pass** or **Fail** the NECTA Form Four Mathematics examination, "
-    "and to receive personalised suggestions."
+    "**Pass** or **Fail** the NECTA Form Four Mathematics examination."
 )
 
 if artifacts is None:
     st.error(
         f"Model file **'{MODEL_FILE}'** was not found.\n\n"
-        "Please run the following command first (with "
-        "`Mwanza_maths_updated.csv` in the same folder) to train "
-        "the model and create this file:\n\n"
-        "```\npython train_model.py\n```"
+        "Run `python train_model.py` first to generate it."
     )
     st.stop()
 
-model = artifacts["model"]
+model        = artifacts["model"]
 model_name = artifacts.get("model_name", "Unknown Model")
-le_school = artifacts["le_school"]
-oe_mock = artifacts["oe_mock"]
+school_map   = artifacts["school_map"]       # {"Private": 0, "Government": 1}
+oe_mock      = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
-mock_order = artifacts["mock_order"]
-accuracy = artifacts["accuracy"]
+mock_order   = artifacts["mock_order"]
+accuracy     = artifacts["accuracy"]
 
+# ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Model Information")
-    st.write(f"**Model in use:** {model_name}")
+    st.header("ℹ️ Model Information")
+    st.write(f"**Model:** {model_name}")
     st.write(f"**Test accuracy:** {accuracy * 100:.2f}%")
-    st.caption(
-        "The model with the higher test accuracy "
-        "(Logistic Regression or Random Forest) was chosen "
-        "automatically during training."
+
+    st.markdown("---")
+    st.subheader("Feature Coefficients")
+
+    coef = model.coef_[0]          # shape (3,)
+    intercept = model.intercept_[0]
+
+    coef_df = pd.DataFrame({
+        "Feature": ["Teacher-to-Student Ratio", "School Type", "Mock Exam Grade"],
+        "Coefficient": [round(coef[0], 4), round(coef[1], 4), round(coef[2], 4)],
+    })
+    st.dataframe(coef_df, hide_index=True, use_container_width=True)
+    st.write(f"**Intercept:** {intercept:.4f}")
+
+    st.markdown("---")
+    st.subheader("Interpretation")
+    st.markdown(
+        """
+**Teacher-to-Student Ratio** `{:.4f}`  
+A larger class reduces the log-odds of passing slightly —
+each additional student per teacher makes it marginally harder to pass.
+
+**School Type** `{:.4f}`  
+*Private = 0 (baseline), Government = 1.*  
+A negative coefficient means Government school students have
+**lower** log-odds of passing compared to Private school students,
+all else being equal.
+
+**Mock Exam Grade** `{:.4f}`  
+The strongest predictor. Each grade step up (F→D→C→B→A)
+substantially increases the log-odds of passing NECTA —
+a student who scores A in the mock is far more likely to pass.
+        """.format(coef[0], coef[1], coef[2])
     )
 
+# ── Input form ───────────────────────────────────────────────────────────────
 st.markdown("---")
 st.subheader("Enter Student Data")
 
@@ -90,81 +90,66 @@ col1, col2 = st.columns(2)
 with col1:
     teacher_student_ratio = st.number_input(
         "Teacher-to-Student Ratio (1 : N)",
-        min_value=1,
-        value=45,
-        step=1,
-        help="Number of students per teacher, e.g. 45 means 1 teacher per 45 students.",
+        min_value=1, max_value=300, value=45, step=1,
+        help="Number of students per teacher.",
     )
-
     school_type = st.selectbox(
         "School Type",
-        options=list(le_school.classes_),
+        options=["Private", "Government"],
     )
 
 with col2:
     mock_grade = st.selectbox(
         "Mock Exam Grade",
         options=mock_order,
-        index=0,
-        help="Grade obtained in the mock examination (A is best, F is worst).",
+        help="Grade in the mock exam (A is best, F is worst).",
     )
 
 st.markdown("")
 predict_clicked = st.button("Enter", type="primary", use_container_width=True)
 
-# --------------------------------------------------------------
-# Run prediction when the user clicks "Enter"
-# --------------------------------------------------------------
+# ── Prediction ────────────────────────────────────────────────────────────────
 if predict_clicked:
-    # Encode inputs using the SAME encoders used during training
-    school_encoded = int(le_school.transform([school_type])[0])
-    mock_encoded = int(oe_mock.transform([[mock_grade]])[0][0])
+    school_encoded = school_map[school_type]          # Private=0, Government=1
+    mock_encoded   = int(oe_mock.transform([[mock_grade]])[0][0])
 
-    student_features = pd.DataFrame(
+    X = pd.DataFrame(
         [[teacher_student_ratio, school_encoded, mock_encoded]],
         columns=feature_cols,
     )
 
-    prediction = model.predict(student_features)[0]
-    probability = model.predict_proba(student_features)[0]  # [P(fail), P(pass)]
+    prediction   = model.predict(X)[0]
+    probability  = model.predict_proba(X)[0]
     prob_fail, prob_pass = float(probability[0]), float(probability[1])
 
     st.markdown("---")
     st.subheader("Prediction Result")
 
-    summary_cols = st.columns(3)
-    summary_cols[0].metric("School Type", school_type)
-    summary_cols[1].metric("Teacher-to-Student Ratio", f"1 : {int(teacher_student_ratio)}")
-    summary_cols[2].metric("Mock Exam Grade", mock_grade)
+    c1, c2, c3 = st.columns(3)
+    c1.metric("School Type", school_type)
+    c2.metric("Teacher : Student", f"1 : {int(teacher_student_ratio)}")
+    c3.metric("Mock Grade", mock_grade)
 
     if prediction == 1:
-        st.success(f" PREDICTION: PASS  (Model used: {model_name})")
+        st.success(f"✅  PREDICTION: PASS   (Model: {model_name})")
     else:
-        st.error(f" PREDICTION: FAIL  (Model used: {model_name})")
+        st.error(f"❌  PREDICTION: FAIL   (Model: {model_name})")
 
-    prob_cols = st.columns(2)
-    prob_cols[0].metric("Probability of Pass", f"{prob_pass * 100:.2f}%")
-    prob_cols[1].metric("Probability of Fail", f"{prob_fail * 100:.2f}%")
+    p1, p2 = st.columns(2)
+    p1.metric("Probability of Pass", f"{prob_pass * 100:.1f}%")
+    p2.metric("Probability of Fail", f"{prob_fail * 100:.1f}%")
     st.progress(prob_pass)
 
-    # ----------------------------------------------------------
-    # Suggestions (mirrors the get_suggestions() logic from the
-    # original notebook)
-    # ----------------------------------------------------------
+    # ── Suggestions ──────────────────────────────────────────────────────────
     st.markdown("---")
     st.subheader("Suggestions")
 
     if prediction == 0:
-        if prob_pass >= 0.40:
-            st.warning(
-                "The student is at **MODERATE** risk of failing - "
-                "targeted support can turn this around."
-            )
+        risk = "MODERATE" if prob_pass >= 0.40 else "HIGH"
+        if risk == "MODERATE":
+            st.warning("The student is at **MODERATE** risk of failing — targeted support can turn this around.")
         else:
-            st.error(
-                "The student is at **HIGH** risk of failing - "
-                "urgent intervention is needed."
-            )
+            st.error("The student is at **HIGH** risk of failing — urgent intervention is needed.")
 
         st.markdown(
             "**Suggestions to improve performance:**\n"
@@ -175,16 +160,11 @@ if predict_clicked:
             "5. Parents/guardians should be informed and support a structured home-study plan."
         )
     else:
+        level = "highly likely to pass" if prob_pass >= 0.80 else "likely to pass"
         if prob_pass >= 0.80:
-            st.success(
-                "The student is **highly likely to pass** - "
-                "keep up the excellent work!"
-            )
+            st.success(f"The student is **{level}** — keep up the excellent work!")
         else:
-            st.info(
-                "The student is **likely to pass** - "
-                "maintain current effort to stay on track."
-            )
+            st.info(f"The student is **{level}** — maintain current effort to stay on track.")
 
         st.markdown(
             "**Suggestions to maintain and improve performance:**\n"
