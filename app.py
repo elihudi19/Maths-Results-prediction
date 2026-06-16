@@ -20,7 +20,9 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-st.title("📊 Mwanza Mathematics Performance Predictor")
+st.title("📊 Mathematics Performance Predictor",
+        layout="centered",
+)
 st.write(
     "Enter a student's details below to predict whether they will "
     "**Pass** or **Fail** the NECTA Form Four Mathematics examination."
