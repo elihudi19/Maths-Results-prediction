@@ -35,13 +35,13 @@ if artifacts is None:
 
 model        = artifacts["model"]
 model_name = artifacts.get("model_name", "Unknown Model")
-school_map   = artifacts.get("school_map", "Unknown school")       # {"Private": 0, "Government": 1}
+school_map   = artifacts.get("school_map", {"Private": 0, "Government": 1})       # {"Private": 0, "Government": 1}
 oe_mock      = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
 mock_order   = artifacts["mock_order"]
 accuracy     = artifacts["accuracy"]
 
-# ── Sidebar ──────────────────────────────────────────────────────────────────
+# ── Sidebar ─────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
@@ -81,7 +81,7 @@ a student who scores A in the mock is far more likely to pass.
         """.format(coef[0], coef[1], coef[2])
     )
 
-# ── Input form ───────────────────────────────────────────────────────────────
+# ── Input form ────────────────────────────────────────────────────────────
 st.markdown("---")
 st.subheader("Enter Student Data")
 
@@ -108,7 +108,7 @@ with col2:
 st.markdown("")
 predict_clicked = st.button("Enter", type="primary", use_container_width=True)
 
-# ── Prediction ────────────────────────────────────────────────────────────────
+# ── Prediction ────────────────────────────────────────────────────────────
 if predict_clicked:
     school_encoded = school_map[school_type]          # Private=0, Government=1
     mock_encoded   = int(oe_mock.transform([[mock_grade]])[0][0])
