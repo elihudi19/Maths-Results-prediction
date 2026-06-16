@@ -85,7 +85,8 @@ a student who scores A in the mock is far more likely to pass.
         """
 **ELIHUDI T ELIAMINI**    
 *CONTACT: 0756710637*     
-**ERENEST D MANYAMA**
+
+**ERENEST D MANYAMA**          
 *CONTACT: +255 682 436 629*
          """
     )
