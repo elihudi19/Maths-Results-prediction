@@ -35,7 +35,7 @@ if artifacts is None:
 
 model        = artifacts["model"]
 model_name = artifacts.get("model_name", "Unknown Model")
-school_map   = artifacts["school_map"]       # {"Private": 0, "Government": 1}
+school_map   = artifacts.get("school_map", "Unknown school")       # {"Private": 0, "Government": 1}
 oe_mock      = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
 mock_order   = artifacts["mock_order"]
