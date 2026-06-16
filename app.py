@@ -41,8 +41,8 @@ feature_cols = artifacts["feature_cols"]
 mock_order   = artifacts["mock_order"]
 accuracy     = artifacts["accuracy"]
 
-# ── Menubar ─────────────────────────────────────────────────────────────
-with st.menubar:
+# ── Sidebar ─────────────────────────────────────────────────────────────
+with st.sidebar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
     st.write(f"**Test accuracy:** {accuracy * 100:.2f}%")
