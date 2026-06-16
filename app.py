@@ -61,22 +61,22 @@ with st.sidebar:
     st.write(f"**Intercept:** {intercept:.4f}")
 
     st.markdown("---")
-    st.subheader("Interpretation")
+    st.subheader("INTERPRETATIONS")
     st.markdown(
         """
 **Teacher-to-Student Ratio** `{:.4f}`  
-A larger class reduces the log-odds of passing slightly —
+A larger class reduces the log-odds of passing slightly -
 each additional student per teacher makes it marginally harder to pass.
 
 **School Type** `{:.4f}`  
 *Private = 0 (baseline), Government = 1.*  
 A negative coefficient means Government school students have
 **lower** log-odds of passing compared to Private school students,
-all else being equal.
+all other variables remain the same.
 
 **Mock Exam Grade** `{:.4f}`  
 The strongest predictor. Each grade step up (F→D→C→B→A)
-substantially increases the log-odds of passing NECTA —
+substantially increases the log-odds of passing NECTA -
 a student who scores A in the mock is far more likely to pass.
         """.format(coef[0], coef[1], coef[2])
     )
