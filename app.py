@@ -141,9 +141,9 @@ if predict_clicked:
     c3.metric("Mock Grade", mock_grade)
 
     if prediction == 1:
-        st.success(f"✅  PREDICTION: PASS   (Model: {model_name})")
+        st.success(f"  PREDICTION: PASS   (Model: {model_name})")
     else:
-        st.error(f"❌  PREDICTION: FAIL   (Model: {model_name})")
+        st.error(f"  PREDICTION: FAIL   (Model: {model_name})")
 
     p1, p2 = st.columns(2)
     p1.metric("Probability of Pass", f"{prob_pass * 100:.1f}%")
