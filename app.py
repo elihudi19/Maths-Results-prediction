@@ -41,8 +41,8 @@ feature_cols = artifacts["feature_cols"]
 mock_order   = artifacts["mock_order"]
 accuracy     = artifacts["accuracy"]
 
-# ── Sidebar ─────────────────────────────────────────────────────────────
-with st.sidebar:
+# ── Menubar ─────────────────────────────────────────────────────────────
+with st.menubar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
     st.write(f"**Test accuracy:** {accuracy * 100:.2f}%")
@@ -79,6 +79,16 @@ The strongest predictor. Each grade step up (F→D→C→B→A)
 substantially increases the log-odds of passing NECTA -
 a student who scores A in the mock is far more likely to pass.
         """.format(coef[0], coef[1], coef[2])
+    )
+    st.subheader("DEVELOPERS INFORMATION")
+    st.markdown(
+        """
+**ELIHUDI T ELIAMINI**
+*CONTACT: 0756710637*
+
+**ERENEST D MANYAMA**
+*CONTACT: +255 682 436 629*
+         """
     )
 
 # ── Input form ────────────────────────────────────────────────────────────
