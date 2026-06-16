@@ -83,9 +83,8 @@ a student who scores A in the mock is far more likely to pass.
     st.subheader("DEVELOPERS INFORMATION")
     st.markdown(
         """
-**ELIHUDI T ELIAMINI**
-*CONTACT: 0756710637*
-
+**ELIHUDI T ELIAMINI**    
+*CONTACT: 0756710637*     
 **ERENEST D MANYAMA**
 *CONTACT: +255 682 436 629*
          """
