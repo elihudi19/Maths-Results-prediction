@@ -157,9 +157,9 @@ if predict_clicked:
     if prediction == 0:
         risk = "MODERATE" if prob_pass >= 0.40 else "HIGH"
         if risk == "MODERATE":
-            st.warning("The student is at **MODERATE** risk of failing — targeted support can turn this around.")
+            st.warning("The student is at **MODERATE** risk of failing - targeted support can turn this around.")
         else:
-            st.error("The student is at **HIGH** risk of failing — urgent intervention is needed.")
+            st.error("The student is at **HIGH** risk of failing - urgent intervention is needed.")
 
         st.markdown(
             "**Suggestions to improve performance:**\n"
@@ -172,9 +172,9 @@ if predict_clicked:
     else:
         level = "highly likely to pass" if prob_pass >= 0.80 else "likely to pass"
         if prob_pass >= 0.80:
-            st.success(f"The student is **{level}** — keep up the excellent work!")
+            st.success(f"The student is **{level}** - keep up the excellent work!")
         else:
-            st.info(f"The student is **{level}** — maintain current effort to stay on track.")
+            st.info(f"The student is **{level}** - maintain current effort to stay on track.")
 
         st.markdown(
             "**Suggestions to maintain and improve performance:**\n"
