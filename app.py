@@ -47,7 +47,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-st.title("       NECTA(CSEE) MATHEMATICS PERFOMANCE PREDICTOR           ")
+st.title("        MATHEMATICS PERFOMANCE PREDICTOR           ")
 st.write(
     "Enter a student's details below to predict whether they will "
     "**Pass** or **Fail** the NECTA Form Four Mathematics examination, "
@@ -143,8 +143,8 @@ if predict_clicked:
         st.error(f" PREDICTION: FAIL  (Model used: {model_name})")
 
     prob_cols = st.columns(2)
-    prob_cols[0].metric("Probability of Pass", f"{prob_pass * 100:.1f}%")
-    prob_cols[1].metric("Probability of Fail", f"{prob_fail * 100:.1f}%")
+    prob_cols[0].metric("Probability of Pass", f"{prob_pass * 100:.3f}%")
+    prob_cols[1].metric("Probability of Fail", f"{prob_fail * 100:.3f}%")
     st.progress(prob_pass)
 
     # ----------------------------------------------------------
