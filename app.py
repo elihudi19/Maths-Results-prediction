@@ -110,7 +110,17 @@ predict_clicked = st.button("Enter", type="primary", use_container_width=True)
 
 # ── Prediction ────────────────────────────────────────────────────────────
 if predict_clicked:
-    school_encoded = school_map[school_type]          # Private=0, Government=1
+    # Safe key lookup with case-insensitive fallback
+    if school_type in school_map:
+        school_encoded = school_map[school_type]
+    else:
+        # Try case-insensitive match
+        school_key = next((k for k in school_map.keys() if k.lower() == school_type.lower()), None)
+        if school_key is None:
+            st.error(f"School type '{school_type}' not found in model. Available options: {list(school_map.keys())}")
+            st.stop()
+        school_encoded = school_map[school_key]
+    
     mock_encoded   = int(oe_mock.transform([[mock_grade]])[0][0])
 
     X = pd.DataFrame(
