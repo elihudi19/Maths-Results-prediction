@@ -166,14 +166,14 @@ if predict_clicked:
 
     # Determine grade level and color based on mock grade
     grade_colors = {
-        "A": {"level": "Highly Likely to Pass", "hex": "#00D084"},
-        "B": {"level": "Very Good", "hex": "#0099FF"},
+        "A": {"level": "Highly Likely to Pass", "hex": "rgba(0, 208, 132, 0.3)"},
+        "B": {"level": "Very Good", "hex": "rgba(0, 153, 255, 0.3)"},
         "C": {"level": "Good", "hex": "#FFA500"},
-        "D": {"level": "Moderate", "hex": "#FFD700"},
-        "F": {"level": "At Risk", "hex": "#FF4444"},
+        "D": {"level": "Moderate", "hex": "rgba(255, 215, 0, 0.3)"},
+        "F": {"level": "At Risk", "hex": "rgba(255, 68, 68, 0.3)"},
     }
 
-    grade_info = grade_colors.get(mock_grade, {"level": "Unknown", "hex": "#808080"})
+    grade_info = grade_colors.get(mock_grade, {"level": "Unknown", "hex": "rgba(128, 128, 128, 0.3)"})
     grade_level = grade_info["level"]
     color_hex = grade_info["hex"]
 
@@ -203,13 +203,17 @@ if predict_clicked:
         </div>
         """, unsafe_allow_html=True)
     else:
-        level = "highly likely to pass" if prob_pass >= 0.80 else "likely to pass"
+        # Special handling for Grade C
+        if mock_grade == "C":
+            message = "The student is likely to pass - keep up the good work!"
+        else:
+            message = "keep up the excellent work!" if prob_pass >= 0.80 else "maintain current effort to stay on track."
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
             <h4 style="color: white; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
             <p style="color: white; font-size: 16px; margin-bottom: 0;">
-                The student is <b>{level}</b> - {"keep up the excellent work!" if prob_pass >= 0.80 else "maintain current effort to stay on track."}
+                {message}
             </p>
         </div>
         """, unsafe_allow_html=True)
