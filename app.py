@@ -166,11 +166,11 @@ if predict_clicked:
 
     # Determine grade level and color based on mock grade
     grade_colors = {
-        "Excellent ": {"level": " Student is Highly Likely to Pass", "hex": "rgba(0, 208, 132, 0.3)"},
-        "Very Good ": {"level": "Student have good chance to pass", "hex": "rgba(0, 153, 255, 0.3)"},
-        "Good ": {"level": "Student is likely to pass", "hex": "#FFA500"},
-        "Moderate ": {"level": "Student is at Moderate level to pass", "hex": "rgba(255, 215, 0, 0.3)"},
-        "Fail ": {"level": "Student is At Risk", "hex": "rgba(255, 68, 68, 0.3)"},
+        "A": {"level": "Student is Highly Likely to Pass", "hex": "rgba(0, 208, 132, 0.3)"},
+        "B": {"level": "Student have good chance to pass", "hex": "rgba(0, 153, 255, 0.3)"},
+        "C": {"level": "Student is likely to pass", "hex": "#FFA500"},
+        "D": {"level": "Student is at Moderate level to pass", "hex": "rgba(255, 215, 0, 0.3)"},
+        "F": {"level": "Student is At Risk", "hex": "rgba(255, 68, 68, 0.3)"},
     }
 
     grade_info = grade_colors.get(mock_grade, {"level": "Unknown", "hex": "rgba(128, 128, 128, 0.3)"})
@@ -182,7 +182,7 @@ if predict_clicked:
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
-            <h4 style="color: black; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
+            <h4 style="color: black; margin-top: 0;">{grade_level}</h4>
             <p style="color: black; font-size: 16px; margin-bottom: 0;">
                 The student is at <b>{"MODERATE" if risk == "MODERATE" else "HIGH"}</b> risk of failing - 
                 {"targeted support can turn this around" if risk == "MODERATE" else "urgent intervention is needed"}.
@@ -211,7 +211,7 @@ if predict_clicked:
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
-            <h4 style="color: white; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
+            <h4 style="color: white; margin-top: 0;">{grade_level}</h4>
             <p style="color: black; font-size: 16px; margin-bottom: 0;">
                 {message}
             </p>
