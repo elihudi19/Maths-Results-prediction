@@ -166,11 +166,11 @@ if predict_clicked:
 
     # Determine grade level and color based on mock grade
     grade_colors = {
-        "A": {"level": "Highly Likely to Pass", "hex": "rgba(0, 208, 132, 0.3)"},
-        "B": {"level": "Very Good", "hex": "rgba(0, 153, 255, 0.3)"},
-        "C": {"level": "Good", "hex": "#FFA500"},
-        "D": {"level": "Moderate", "hex": "rgba(255, 215, 0, 0.3)"},
-        "F": {"level": "At Risk", "hex": "rgba(255, 68, 68, 0.3)"},
+        " " {"level": "Highly Likely to Pass", "hex": "rgba(0, 208, 132, 0.3)"},
+        " " {"level": "Very Good", "hex": "rgba(0, 153, 255, 0.3)"},
+        " " {"level": "Good", "hex": "#FFA500"},
+        " " {"level": "Moderate", "hex": "rgba(255, 215, 0, 0.3)"},
+        " " {"level": "At Risk", "hex": "rgba(255, 68, 68, 0.3)"},
     }
 
     grade_info = grade_colors.get(mock_grade, {"level": "Unknown", "hex": "rgba(128, 128, 128, 0.3)"})
@@ -182,8 +182,8 @@ if predict_clicked:
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
-            <h4 style="color: white; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
-            <p style="color: white; font-size: 16px; margin-bottom: 0;">
+            <h4 style="color: black; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
+            <p style="color: black; font-size: 16px; margin-bottom: 0;">
                 The student is at <b>{"MODERATE" if risk == "MODERATE" else "HIGH"}</b> risk of failing - 
                 {"targeted support can turn this around" if risk == "MODERATE" else "urgent intervention is needed"}.
             </p>
@@ -212,7 +212,7 @@ if predict_clicked:
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
             <h4 style="color: white; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
-            <p style="color: white; font-size: 16px; margin-bottom: 0;">
+            <p style="color: black; font-size: 16px; margin-bottom: 0;">
                 {message}
             </p>
         </div>
@@ -220,7 +220,7 @@ if predict_clicked:
 
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex}; margin-top: 15px;">
-            <p style="color: white; font-size: 14px; line-height: 1.8; margin: 0;">
+            <p style="color: black; font-size: 14px; line-height: 1.8; margin: 0;">
                 <b>Suggestions to maintain and improve performance:</b><br>
                 1. Keep up current study discipline and avoid overconfidence.<br>
                 2. Engage in peer tutoring to reinforce personal understanding.<br>
