@@ -205,13 +205,13 @@ if predict_clicked:
     else:
         # Special handling for Grade C
         if mock_grade == "C":
-            message = "The student is likely to pass - keep up the good work!"
+            message = "keep up the good work!"
         else:
-            message = "keep up the excellent work!" if prob_pass >= 0.98 else "maintain current effort to stay on track."
+            message = "keep up the excellent work!" if prob_pass >= 0.98 else "Maintain current effort to stay on track."
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
-            <h4 style="color: white; margin-top: 0;">{grade_level}</h4>
+            <h4 style="color: black; margin-top: 0;">{grade_level}</h4>
             <p style="color: black; font-size: 16px; margin-bottom: 0;">
                 {message}
             </p>
