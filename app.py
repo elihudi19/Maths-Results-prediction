@@ -162,15 +162,15 @@ if predict_clicked:
 
     # ── Suggestions ──────────────────────────────────────────────────────────
     st.markdown("---")
-    st.subheader("Suggestions")
+    st.subheader("SUGGESTIONS")
 
     # Determine grade level and color based on mock grade
     grade_colors = {
-        "A": {"level": " ", "hex": "rgba(0, 208, 132, 0.3)"},
-        "B": {"level": " ", "hex": "rgba(0, 153, 255, 0.3)"},
-        "C": {"level": " ", "hex": "#FFA500"},
-        "D": {"level": " ", "hex": "rgba(255, 215, 0, 0.3)"},
-        "F": {"level": " ", "hex": "rgba(255, 68, 68, 0.3)"},
+        "A": {"level": "STUDENT'S MESSAGE", "hex": "rgba(0, 208, 132, 0.3)"},
+        "B": {"level": "STUDENT'S MESSAGE", "hex": "rgba(0, 153, 255, 0.3)"},
+        "C": {"level": "STUDENT'S MESSAGE", "hex": "#FFA500"},
+        "D": {"level": "STUDENT'S MESSAGE", "hex": "rgba(255, 215, 0, 0.3)"},
+        "F": {"level": "STUDENT'S MESSAGE", "hex": "rgba(255, 68, 68, 0.3)"},
     }
 
     grade_info = grade_colors.get(mock_grade, {"level": "Unknown", "hex": "rgba(128, 128, 128, 0.3)"})
@@ -184,7 +184,7 @@ if predict_clicked:
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
             <h4 style="color: black; margin-top: 0;">{grade_level}</h4>
             <p style="color: black; font-size: 16px; margin-bottom: 0;">
-                The student is at <b>{"HIGH"}</b> risk of failing - 
+                The student is at <b>{"HIGH"}</b> risk of failing;
                 {"urgent intervention is needed"}.
             </p>
         </div>
@@ -205,9 +205,11 @@ if predict_clicked:
     else:
         # Special handling for Grade C
         if mock_grade == "C":
-            message = "keep up the good work!"
-        else:
-            message = "keep up the excellent work!" if prob_pass >= 0.98 else "Maintain current effort to stay on track."
+            message = "Nice work! You passed, but you can do even better next time."
+          if mock_grade == "B":
+              message = "Good job! You did very well-keep pushing for the top"
+          else:
+            message = "Great job! Your hard work really shows. Keep it up!"
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
