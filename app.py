@@ -164,33 +164,65 @@ if predict_clicked:
     st.markdown("---")
     st.subheader("Suggestions")
 
+    # Determine grade level and color based on mock grade
+    grade_colors = {
+        "A": {"level": "Highly Likely to Pass", "hex": "#00D084"},
+        "B": {"level": "Very Good", "hex": "#0099FF"},
+        "C": {"level": "Good", "hex": "#FFA500"},
+        "D": {"level": "Moderate", "hex": "#FFD700"},
+        "F": {"level": "At Risk", "hex": "#FF4444"},
+    }
+
+    grade_info = grade_colors.get(mock_grade, {"level": "Unknown", "hex": "#808080"})
+    grade_level = grade_info["level"]
+    color_hex = grade_info["hex"]
+
     if prediction == 0:
         risk = "MODERATE" if prob_pass >= 0.40 else "HIGH"
-        if risk == "MODERATE":
-            st.warning("The student is at **MODERATE** risk of failing - targeted support can turn this around.")
-        else:
-            st.error("The student is at **HIGH** risk of failing - urgent intervention is needed.")
+        
+        st.markdown(f"""
+        <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
+            <h4 style="color: white; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
+            <p style="color: white; font-size: 16px; margin-bottom: 0;">
+                The student is at <b>{"MODERATE" if risk == "MODERATE" else "HIGH"}</b> risk of failing - 
+                {"targeted support can turn this around" if risk == "MODERATE" else "urgent intervention is needed"}.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown(
-            "**Suggestions to improve performance:**\n"
-            "1. Enrol in remedial Mathematics classes focusing on weak topic areas.\n"
-            "2. Teachers should use group assignments to keep large classes engaged.\n"
-            "3. School should create a textbook-sharing or library rotation system.\n"
-            "4. Student should practise past NECTA papers under timed conditions.\n"
-            "5. Parents/guardians should be informed and support a structured home-study plan."
-        )
+        st.markdown(f"""
+        <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex}; margin-top: 15px;">
+            <p style="color: white; font-size: 14px; line-height: 1.8; margin: 0;">
+                <b>Suggestions to improve performance:</b><br>
+                1. Enrol in remedial Mathematics classes focusing on weak topic areas.<br>
+                2. Teachers should use group assignments to keep large classes engaged.<br>
+                3. School should create a textbook-sharing or library rotation system.<br>
+                4. Student should practise past NECTA papers under timed conditions.<br>
+                5. Parents/guardians should be informed and support a structured home-study plan.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
     else:
         level = "highly likely to pass" if prob_pass >= 0.80 else "likely to pass"
-        if prob_pass >= 0.80:
-            st.success(f"The student is **{level}** - keep up the excellent work!")
-        else:
-            st.info(f"The student is **{level}** - maintain current effort to stay on track.")
+        
+        st.markdown(f"""
+        <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
+            <h4 style="color: white; margin-top: 0;">Grade {mock_grade}: {grade_level}</h4>
+            <p style="color: white; font-size: 16px; margin-bottom: 0;">
+                The student is <b>{level}</b> - {"keep up the excellent work!" if prob_pass >= 0.80 else "maintain current effort to stay on track."}
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown(
-            "**Suggestions to maintain and improve performance:**\n"
-            "1. Keep up current study discipline and avoid overconfidence.\n"
-            "2. Engage in peer tutoring to reinforce personal understanding.\n"
-            "3. Teachers should track progress through regular short tests.\n"
-            "4. Attempt advanced NECTA questions to maximise the final grade.\n"
-            "5. Maintain good health and sleep habits during the exam period."
-        )
+        st.markdown(f"""
+        <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex}; margin-top: 15px;">
+            <p style="color: white; font-size: 14px; line-height: 1.8; margin: 0;">
+                <b>Suggestions to maintain and improve performance:</b><br>
+                1. Keep up current study discipline and avoid overconfidence.<br>
+                2. Engage in peer tutoring to reinforce personal understanding.<br>
+                3. Teachers should track progress through regular short tests.<br>
+                4. Attempt advanced NECTA questions to maximise the final grade.<br>
+                5. Maintain good health and sleep habits during the exam period.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
