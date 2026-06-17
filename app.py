@@ -206,9 +206,9 @@ if predict_clicked:
         # Special handling for Grade C
         if mock_grade == "C":
             message = "Nice work! You passed, but you can do even better next time."
-          if mock_grade == "B":
-              message = "Good job! You did very well-keep pushing for the top"
-          else:
+        elif mock_grade == "B":
+            message = "Good job! You did very well-keep pushing for the top"
+        else:
             message = "Great job! Your hard work really shows. Keep it up!"
         
         st.markdown(f"""
