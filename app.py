@@ -116,7 +116,8 @@ with col2:
     )
 
 st.markdown("")
-predict_clicked = st.button("Enter", type="primary", use_container_width=False)
+col1, col2, col3 = st.columns([1, 1, 1])
+predict_clicked = st.button("Enter", type="primary", use_container_width=True)
 
 # ── Prediction ────────────────────────────────────────────────────────────
 if predict_clicked:
