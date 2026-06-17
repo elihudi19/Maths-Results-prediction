@@ -178,7 +178,7 @@ if predict_clicked:
     color_hex = grade_info["hex"]
 
     if prediction == 0:
-        risk = "MODERATE" if prob_pass >= 0.40 else "HIGH"
+        risk = "CLOSELY TO HIGH RISK" if prob_pass >= 0.40 else "HIGH"
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
@@ -192,7 +192,7 @@ if predict_clicked:
 
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex}; margin-top: 15px;">
-            <p style="color: white; font-size: 14px; line-height: 1.8; margin: 0;">
+            <p style="color: black; font-size: 14px; line-height: 1.8; margin: 0;">
                 <b>Suggestions to improve performance:</b><br>
                 1. Enrol in remedial Mathematics classes focusing on weak topic areas.<br>
                 2. Teachers should use group assignments to keep large classes engaged.<br>
@@ -207,7 +207,7 @@ if predict_clicked:
         if mock_grade == "C":
             message = "The student is likely to pass - keep up the good work!"
         else:
-            message = "keep up the excellent work!" if prob_pass >= 0.80 else "maintain current effort to stay on track."
+            message = "keep up the excellent work!" if prob_pass >= 0.98 else "maintain current effort to stay on track."
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
