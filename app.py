@@ -178,14 +178,14 @@ if predict_clicked:
     color_hex = grade_info["hex"]
 
     if prediction == 0:
-        risk = "CLOSELY TO HIGH RISK" if prob_pass >= 0.40 else "HIGH"
+        risk = "HIGH"
         
         st.markdown(f"""
         <div style="background-color: {color_hex}; padding: 15px; border-radius: 10px; border-left: 5px solid {color_hex};">
             <h4 style="color: black; margin-top: 0;">{grade_level}</h4>
             <p style="color: black; font-size: 16px; margin-bottom: 0;">
-                The student is at <b>{"MODERATE" if risk == "MODERATE" else "HIGH"}</b> risk of failing - 
-                {"targeted support can turn this around" if risk == "MODERATE" else "urgent intervention is needed"}.
+                The student is at <b>{"HIGH"}</b> risk of failing - 
+                {"urgent intervention is needed"}.
             </p>
         </div>
         """, unsafe_allow_html=True)
