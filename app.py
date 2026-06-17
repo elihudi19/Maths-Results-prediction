@@ -166,11 +166,11 @@ if predict_clicked:
 
     # Determine grade level and color based on mock grade
     grade_colors = {
-        "A": {"level": "Student is Highly Likely to Pass", "hex": "rgba(0, 208, 132, 0.3)"},
-        "B": {"level": "Student have good chance to pass", "hex": "rgba(0, 153, 255, 0.3)"},
-        "C": {"level": "Student is likely to pass", "hex": "#FFA500"},
-        "D": {"level": "Student is at Moderate level to pass", "hex": "rgba(255, 215, 0, 0.3)"},
-        "F": {"level": "Student is At Risk", "hex": "rgba(255, 68, 68, 0.3)"},
+        "A": {"level": " ", "hex": "rgba(0, 208, 132, 0.3)"},
+        "B": {"level": " ", "hex": "rgba(0, 153, 255, 0.3)"},
+        "C": {"level": " ", "hex": "#FFA500"},
+        "D": {"level": " ", "hex": "rgba(255, 215, 0, 0.3)"},
+        "F": {"level": " ", "hex": "rgba(255, 68, 68, 0.3)"},
     }
 
     grade_info = grade_colors.get(mock_grade, {"level": "Unknown", "hex": "rgba(128, 128, 128, 0.3)"})
