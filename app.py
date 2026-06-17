@@ -156,8 +156,8 @@ if predict_clicked:
         st.error(f"  PREDICTION: FAIL   (Model: {model_name})")
 
     p1, p2 = st.columns(2)
-    p1.metric("Probability of Pass", f"{prob_pass :.4f}%")
-    p2.metric("Probability of Fail", f"{prob_fail :.4f}%")
+    p1.metric("Probability of Pass", f"{prob_pass :.4f}")
+    p2.metric("Probability of Fail", f"{prob_fail :.4f}")
     st.progress(prob_pass)
 
     # ── Suggestions ──────────────────────────────────────────────────────────
