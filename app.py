@@ -116,7 +116,7 @@ with col2:
     )
 
 st.markdown("")
-predict_clicked = st.button("Enter", type="primary", use_container_width=True)
+predict_clicked = st.button("Enter", type="primary", use_container_width=False)
 
 # ── Prediction ────────────────────────────────────────────────────────────
 if predict_clicked:
@@ -206,6 +206,8 @@ if predict_clicked:
         # Special handling for Grade C
         if mock_grade == "C":
             message = "Nice work! You passed, but you can do even better next time."
+        elif mock_grade == "D":
+            message = "You passed! It was close, so let's study harder next time"
         elif mock_grade == "B":
             message = "Good job! You did very well-keep pushing for the top"
         else:
