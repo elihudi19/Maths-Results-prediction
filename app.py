@@ -14,19 +14,11 @@ from reportlab.platypus import (
 )
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
 
-MODEL_FILE = "model.joblib"
-
 st.set_page_config(
     page_title="NECTA Mathematics Performance Predictor",
     page_icon="📊",
     layout="centered",
 )
-
-@st.cache_resource
-def load_artifacts():
-    if not os.path.exists(MODEL_FILE):
-        return None
-    return joblib.load(MODEL_FILE)
 
 artifacts = load_artifacts()
 
