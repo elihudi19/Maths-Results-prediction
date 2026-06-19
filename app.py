@@ -35,7 +35,7 @@ if artifacts is None:
 
 model        = artifacts["model"]
 model_name = artifacts.get("model_name", "Unknown Model")
-school_map   = artifacts.get("school_map", {"Government": 0, "Private": 1})       # {"Private": 0, "Government": 1}
+school_map   = artifacts.get("school_map", {"Government": 1, "Private": 0})       # {"Private": 0, "Government": 1}
 oe_mock      = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
 mock_order   = artifacts["mock_order"]
@@ -79,9 +79,8 @@ with st.sidebar:
 A larger class reduces the log-odds of passing slightly -
 each additional student per teacher makes it marginally harder to pass.
 
-**School Type** `{:.4f}`  
-*Private = 0 (baseline), Government = 1.*  
-A negative coefficient means Government school students have
+**School Type** `{:.4f}`
+A negative coefficient of `{:.4f}` means Government school students have
 **lower** log-odds of passing compared to Private school students,
 all other variables remain the same.
 
