@@ -47,7 +47,7 @@ with st.sidebar:
     st.write(f"**Model:** {model_name}")
     st.write(f"**Test accuracy:** {accuracy * 100:.2f}%")
 
-st.subheader("TRAINED DATASET INFORMATION ABOUT PASS & FAIL")
+    st.subheader("TRAINED DATASET INFORMATION ABOUT PASS & FAIL")
     st.markdown(
         """
 **PASS **    
