@@ -199,7 +199,7 @@ if predict_clicked:
     grade_colors = {
         "A": {"level": "STUDENT'S MESSAGE", "hex": "rgba(0, 208, 132, 0.3)"},
         "B": {"level": "STUDENT'S MESSAGE", "hex": "rgba(0, 153, 255, 0.3)"},
-
+    }
 # ── Input form ────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.subheader("Enter Student Data")
