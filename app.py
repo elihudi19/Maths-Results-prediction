@@ -107,7 +107,7 @@ with st.sidebar:
     st.subheader("INTERPRETATIONS")
     st.markdown(
         f"""
-**Intercept: {intercept:.4f}**
+**Intercept: {intercept:.4f}**  
 *This means the probability to pass is starting at* **{1/(1+np.exp(-intercept)):.5f}**
 *when all variables are zero.
 Where in School Type; Private = 0 and in Mock Result; F = 0.
@@ -117,17 +117,17 @@ teacher-to-student ratio can never be zero.*
     )
     st.markdown(
         f"""
-**Teacher-to-Student Ratio** `{coef[0]:.4f}`
+**Teacher-to-Student Ratio** `{coef[0]:.4f}`  
 A larger class reduces the log-odds of passing slightly —
 each additional student per teacher makes it marginally harder to pass.
 
-**School Type** `{coef[1]:.4f}`
+**School Type** `{coef[1]:.4f}`  
 **Private** = *0 (Baseline)*, **Government** = *1*
 A negative coefficient means Government school students have
 **lower** log-odds of passing compared to Private school students,
 all other variables remaining the same.
 
-**Mock Exam Grade** `{coef[2]:.4f}`
+**Mock Exam Grade** `{coef[2]:.4f}`  
 The strongest predictor. Each grade step up (F→D→C→B→A)
 substantially increases the log-odds of passing NECTA —
 a student who scores A in the mock is far more likely to pass.
@@ -155,9 +155,6 @@ col1, col2 = st.columns(2)
 with col1:
     teacher_student_ratio = st.number_input(
         "Teacher-to-Student Ratio (1 : N)",
-        min_value=1,
-        max_value=300,
-        value=45,
         step=1,
         help="Number of students per teacher.",
     )
@@ -243,8 +240,8 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
         Table(
             [
                 ["PREDICTED OUTCOME",   result_label],
-                ["Probability of Pass", f"{prob_pass * 100:.2f}%"],
-                ["Probability of Fail", f"{prob_fail * 100:.2f}%"],
+                ["Probability of Pass", f"{prob_pass :.5f}"],
+                ["Probability of Fail", f"{prob_fail :.5f}"],
             ],
             colWidths=[7*cm, 9*cm],
             style=TableStyle([
@@ -404,7 +401,7 @@ if predict_clicked:
     )
 
     st.download_button(
-        label="⬇️ Download Prediction & Suggestions as PDF",
+        label="Download Prediction & Suggestions as PDF",
         data=pdf_buffer,
         file_name=f"NECTA_Prediction_{school_type}_{mock_grade}.pdf",
         mime="application/pdf",
