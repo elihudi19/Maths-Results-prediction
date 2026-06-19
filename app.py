@@ -1,10 +1,13 @@
-import os
 import io
 import datetime
 import pandas as pd
 import numpy as np
 import streamlit as st
-import joblib
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OrdinalEncoder
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -12,7 +15,12 @@ from reportlab.lib.units import cm
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 )
-from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+
+DATA_FILE  = "Mwanza_maths_updated.csv"
+MOCK_ORDER = ["F", "D", "C", "B", "A"]
+SCHOOL_MAP = {"Private": 0, "Government": 1}
+FEATURE_COLS = ["teacher_to_student_ratio", "school_type_encoded", "mock_result_encoded"]
 
 st.set_page_config(
     page_title="NECTA Mathematics Performance Predictor",
@@ -20,30 +28,52 @@ st.set_page_config(
     layout="centered",
 )
 
-artifacts = load_artifacts()
+@st.cache_resource
+def train_model():
+    df = pd.read_csv(DATA_FILE)
+    df = df.dropna()
 
+    df["school_type_encoded"] = df["school_type"].map(SCHOOL_MAP)
+
+    oe_mock = OrdinalEncoder(
+        categories=[MOCK_ORDER],
+        handle_unknown="use_encoded_value",
+        unknown_value=-1
+    )
+    df["mock_result_encoded"] = oe_mock.fit_transform(df[["mock_result"]]).astype(int)
+
+    X = df[FEATURE_COLS]
+    y = df["NECTA_result"]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    lr_model = LogisticRegression(max_iter=1000, random_state=42)
+    lr_model.fit(X_train, y_train)
+    lr_acc = accuracy_score(y_test, lr_model.predict(X_test))
+
+    rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+    rf_model.fit(X_train, y_train)
+    rf_acc = accuracy_score(y_test, rf_model.predict(X_test))
+
+    if rf_acc >= lr_acc:
+        best_model, best_name, best_acc = rf_model, "Random Forest", rf_acc
+    else:
+        best_model, best_name, best_acc = lr_model, "Logistic Regression", lr_acc
+
+    return best_model, best_name, best_acc, oe_mock
+
+model, model_name, accuracy, oe_mock = train_model()
+
+# ── Page title ────────────────────────────────────────────────────────────────
 st.title("📊 Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
     "**Pass** or **Fail** the NECTA Form Four Mathematics examination."
 )
 
-if artifacts is None:
-    st.error(
-        f"Model file **'{MODEL_FILE}'** was not found.\n\n"
-        "Run `python train_model.py` first to generate it."
-    )
-    st.stop()
-
-model        = artifacts["model"]
-model_name   = artifacts.get("model_name", "Unknown Model")
-school_map   = artifacts.get("school_map", {"Government": 0, "Private": 1})
-oe_mock      = artifacts["oe_mock"]
-feature_cols = artifacts["feature_cols"]
-mock_order   = artifacts["mock_order"]
-accuracy     = artifacts["accuracy"]
-
-# ── Sidebar ──────────────────────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
@@ -116,7 +146,7 @@ a student who scores A in the mock is far more likely to pass.
         """
     )
 
-# ── Input form ───────────────────────────────────────────────────────────────
+# ── Input form ────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.subheader("Enter Student Data")
 
@@ -139,7 +169,7 @@ with col1:
 with col2:
     mock_grade = st.selectbox(
         "Mock Exam Grade",
-        options=mock_order,
+        options=MOCK_ORDER,
         help="Grade in the mock exam (A is best, F is worst).",
     )
 
@@ -157,11 +187,11 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
         topMargin=2*cm, bottomMargin=2*cm,
     )
 
-    styles   = getSampleStyleSheet()
-    BLUE     = colors.HexColor("#1F4E79")
-    GREEN    = colors.HexColor("#2ecc71")
-    RED      = colors.HexColor("#e74c3c")
-    LGRAY    = colors.HexColor("#f2f2f2")
+    styles = getSampleStyleSheet()
+    BLUE   = colors.HexColor("#1F4E79")
+    GREEN  = colors.HexColor("#2ecc71")
+    RED    = colors.HexColor("#e74c3c")
+    LGRAY  = colors.HexColor("#f2f2f2")
 
     title_s = ParagraphStyle("TitleS", parent=styles["Title"],
                               fontSize=17, textColor=BLUE,
@@ -189,10 +219,10 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
         Paragraph("Student Input Summary", head_s),
         Table(
             [
-                ["School Type",               school_type],
-                ["Teacher-to-Student Ratio",  f"1 : {int(ratio)}"],
-                ["Mock Exam Grade",           mock_grade],
-                ["Model Used",                model_name],
+                ["School Type",              school_type],
+                ["Teacher-to-Student Ratio", f"1 : {int(ratio)}"],
+                ["Mock Exam Grade",          mock_grade],
+                ["Model Used",               model_name],
             ],
             colWidths=[7*cm, 9*cm],
             style=TableStyle([
@@ -212,7 +242,7 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
         Paragraph("Prediction Result", head_s),
         Table(
             [
-                ["PREDICTED OUTCOME",  result_label],
+                ["PREDICTED OUTCOME",   result_label],
                 ["Probability of Pass", f"{prob_pass * 100:.2f}%"],
                 ["Probability of Fail", f"{prob_fail * 100:.2f}%"],
             ],
@@ -221,7 +251,7 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
                 ("BACKGROUND",    (0,0), (-1,0), result_color),
                 ("TEXTCOLOR",     (0,0), (-1,0), colors.white),
                 ("FONTNAME",      (0,0), (-1,0), "Helvetica-Bold"),
-                ("FONTNAME",      (0,1), (-1,-1),"Helvetica"),
+                ("FONTNAME",      (0,1), (-1,-1), "Helvetica"),
                 ("FONTSIZE",      (0,0), (-1,-1), 12),
                 ("ROWBACKGROUNDS",(0,1), (-1,-1), [colors.white, LGRAY]),
                 ("BOX",           (0,0), (-1,-1), 0.5, colors.lightgrey),
@@ -247,10 +277,7 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     story += [
         Spacer(1, 0.6*cm),
         HRFlowable(width="100%", thickness=1, color=BLUE, spaceAfter=6),
-        Paragraph(
-            "Mwanza Mathematics Performance Prediction System — 2026",
-            sub_s
-        ),
+        Paragraph("Mwanza Mathematics Performance Prediction System — 2026", sub_s),
         Paragraph(
             "Developers: ELIHUDI T ELIAMINI (0756710637) | "
             "ERENEST D MANYAMA (+255 682 436 629)",
@@ -265,21 +292,8 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
 
 # ── Prediction ────────────────────────────────────────────────────────────────
 if predict_clicked:
-    if school_type in school_map:
-        school_encoded = school_map[school_type]
-    else:
-        school_key = next(
-            (k for k in school_map if k.lower() == school_type.lower()), None
-        )
-        if school_key is None:
-            st.error(
-                f"School type '{school_type}' not recognised. "
-                f"Available: {list(school_map.keys())}"
-            )
-            st.stop()
-        school_encoded = school_map[school_key]
-
-    mock_encoded = int(
+    school_encoded = SCHOOL_MAP[school_type]
+    mock_encoded   = int(
         oe_mock.transform(
             pd.DataFrame([[mock_grade]], columns=["mock_result"])
         )[0][0]
@@ -287,7 +301,7 @@ if predict_clicked:
 
     X = pd.DataFrame(
         [[teacher_student_ratio, school_encoded, mock_encoded]],
-        columns=feature_cols,
+        columns=FEATURE_COLS,
     )
 
     prediction  = model.predict(X)[0]
@@ -298,9 +312,9 @@ if predict_clicked:
     st.subheader("Prediction Result")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("School Type",        school_type)
-    c2.metric("Teacher : Student",  f"1 : {int(teacher_student_ratio)}")
-    c3.metric("Mock Grade",         mock_grade)
+    c1.metric("School Type",       school_type)
+    c2.metric("Teacher : Student", f"1 : {int(teacher_student_ratio)}")
+    c3.metric("Mock Grade",        mock_grade)
 
     if prediction == 1:
         st.success(f"PREDICTION: PASS   (Model: {model_name})")
