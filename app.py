@@ -69,7 +69,7 @@ with st.sidebar:
         "Coefficient": [round(coef[0], 4), round(coef[1], 4), round(coef[2], 4)], 
             })
     st.dataframe(coef_df, hide_index=True, use_container_width=True)
-    st.write(f"**Intercept:** {intercept:.4f}"), 
+    st.write(f"**Intercept:** {intercept:.4f}")
     st.markdown("___")
     st.subheader("INTERPRETATIONS")
     st.markdown(
