@@ -119,18 +119,18 @@ teacher-to-student ratio can never be zero.*
     st.markdown(
         f"""
 **Teacher-to-Student Ratio** `{coef[0]:.4f}`  
-A larger class reduces the log-odds of passing slightly —
+A larger class reduces the log-odds of passing slightly - 
 each additional student per teacher makes it marginally harder to pass.
 
 **School Type** `{coef[1]:.4f}`  
 **Private** = *0 (Baseline)*, **Government** = *1*
-A negative coefficient means Government school students have
-**lower** log-odds of passing compared to Private school students,
+This means Private school students have
+**lager** log-odds of passing compared to Government school students,
 all other variables remaining the same.
 
 **Mock Exam Grade** `{coef[2]:.4f}`  
 The strongest predictor. Each grade step up (F→D→C→B→A)
-substantially increases the log-odds of passing NECTA —
+substantially increases the log-odds of passing NECTA -
 a student who scores A in the mock is far more likely to pass.
         """
     )
@@ -142,7 +142,7 @@ a student who scores A in the mock is far more likely to pass.
 **ELIHUDI T ELIAMINI**   
 *CONTACT: 0756710637*   
 
-**ERENEST D MANYAMA**
+**ERENEST D MANYAMA**   
 *CONTACT: +255 682 436 629*
         """
     )
