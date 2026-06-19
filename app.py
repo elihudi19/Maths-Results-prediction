@@ -67,7 +67,7 @@ with st.sidebar:
     coef_df = pd.DataFrame({
         "Feature": ["Teacher-to-Student Ratio", "School Type", "Mock Exam Grade"],
         "Coefficient": [round(coef[0], 4), round(coef[1], 4), round(coef[2], 4)], 
-        "This means the probability to pass is starting 0.107 when all variable is zero. But in real world teacher to student ratio can never be zero"
+        "This means the probability to pass is starting 0.107 when all variable is zero. But in real world enterpretation teacher to student ratio can never be zero",
     })
     st.dataframe(coef_df, hide_index=True, use_container_width=True)
     st.write(f"**Intercept:** {intercept:.4f}")
