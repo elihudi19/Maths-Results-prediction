@@ -74,10 +74,13 @@ with st.sidebar:
     st.subheader("INTERPRETATIONS")
     st.markdown(
         """
-**Intercept** `{:.4f}`  
+ **Intercept** -2.1192  
  *This means the probability to pass is starting at* **0.10724** *when all variable is zero.*
  *Where In school Type Private= 0 and In Mock result F= 0 This occur during encoding process. But in real world enterpretation teacher to student ratio can never be zero*
-
+        """
+    )
+    st.markdown(
+        """
 **Teacher-to-Student Ratio** `{:.4f}`  
 A larger class reduces the log-odds of passing slightly -
 each additional student per teacher makes it marginally harder to pass.
@@ -92,7 +95,7 @@ all other variables remain the same.
 The strongest predictor. Each grade step up (F→D→C→B→A)
 substantially increases the log-odds of passing NECTA -
 a student who scores A in the mock is far more likely to pass.
-        """.format(intercept_[0], coef[0], coef[1], coef[2])
+        """.format(coef[0], coef[1], coef[2])
     )
     st.subheader("DEVELOPERS INFORMATION")
     st.markdown(
