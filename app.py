@@ -70,7 +70,7 @@ with st.sidebar:
             })
     st.dataframe(coef_df, hide_index=True, use_container_width=True)
     st.write(f"**Intercept:** {intercept:.4f}"), 
-    st.markdown("---")
+    st.markdown("___")
     st.subheader("INTERPRETATIONS")
     st.markdown(
         """
