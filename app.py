@@ -69,11 +69,15 @@ with st.sidebar:
         "Coefficient": [round(coef[0], 4), round(coef[1], 4), round(coef[2], 4)], 
             })
     st.dataframe(coef_df, hide_index=True, use_container_width=True)
-    st.write(f"**Intercept:** {intercept:.4f} *This means the probability to pass is starting at 0.10724 when all variable is zero Where In school Type Private= 0 and In Mock result F= 0 This occur during encoding process. But in real world enterpretation teacher to student ratio can never be zero*"),
+    st.write(f"**Intercept:** {intercept:.4f}"), 
     st.markdown("---")
     st.subheader("INTERPRETATIONS")
     st.markdown(
         """
+**Intercept** `{:.4f}`  
+ *This means the probability to pass is starting at* **0.10724** *when all variable is zero.*
+ *Where In school Type Private= 0 and In Mock result F= 0 This occur during encoding process. But in real world enterpretation teacher to student ratio can never be zero*
+
 **Teacher-to-Student Ratio** `{:.4f}`  
 A larger class reduces the log-odds of passing slightly -
 each additional student per teacher makes it marginally harder to pass.
