@@ -1,5 +1,6 @@
 import io
 import datetime
+from zoneinfo import ZoneInfo
 import pandas as pd
 import numpy as np
 import streamlit as st
@@ -138,8 +139,8 @@ a student who scores A in the mock is far more likely to pass.
     st.subheader("DEVELOPERS INFORMATION")
     st.markdown(
         """
-**ELIHUDI T ELIAMINI**
-*CONTACT: 0756710637*
+**ELIHUDI T ELIAMINI**   
+*CONTACT: 0756710637*   
 
 **ERENEST D MANYAMA**
 *CONTACT: +255 682 436 629*
@@ -205,7 +206,11 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
 
     result_label = "PASS" if prediction == 1 else "FAIL"
     result_color = GREEN  if prediction == 1 else RED
-    now = datetime.datetime.now().strftime("%d %B %Y, %H:%M")
+    # Set the timezone to East Africa (Africa/Nairobi covers EAT)
+eat_tz = ZoneInfo("Africa/Nairobi")
+
+# Get the current time in EAT and format it
+now = datetime.datetime.now(eat_tz).strftime("%d %B %Y, %H:%M")
 
     story = [
         Paragraph("NECTA Mathematics Performance Prediction", title_s),
@@ -401,7 +406,7 @@ if predict_clicked:
     )
 
     st.download_button(
-        label="Download Prediction & Suggestions as PDF",
+        label="⬇️Download Prediction & Suggestions as PDF",
         data=pdf_buffer,
         file_name=f"NECTA_Prediction_{school_type}_{mock_grade}.pdf",
         mime="application/pdf",
