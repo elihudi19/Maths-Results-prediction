@@ -69,8 +69,7 @@ with st.sidebar:
         "Coefficient": [round(coef[0], 4), round(coef[1], 4), round(coef[2], 4)], 
             })
     st.dataframe(coef_df, hide_index=True, use_container_width=True)
-    st.write(f"**Intercept:** {intercept:.4f}  
-    This means the probability to pass is starting at 0.107 when all variable is zero. But in real world enterpretation teacher to student ratio can never be zero"),
+    st.write(f"**Intercept:** {intercept:.4f}          This means the probability to pass is starting at 0.107 when all variable is zero. But in real world enterpretation teacher to student ratio can never be zero"),
     st.markdown("---")
     st.subheader("INTERPRETATIONS")
     st.markdown(
