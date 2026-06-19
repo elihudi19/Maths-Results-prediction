@@ -74,9 +74,9 @@ with st.sidebar:
     st.subheader("INTERPRETATIONS")
     st.markdown(
         """
- **Intercept** -2.1192  
+ **Intercept: -2.1192**  
  *This means the probability to pass is starting at* **0.10724** *when all variable is zero.*
- *Where In school Type Private= 0 and In Mock result F= 0 This occur during encoding process. But in real world enterpretation teacher to student ratio can never be zero*
+ *Where* **In school Type Private= 0** *and* **In Mock result F= 0**, *This occured during encoding process. But in real world enterpretation teacher to student ratio can never be zero*
         """
     )
     st.markdown(
