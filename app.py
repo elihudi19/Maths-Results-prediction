@@ -50,8 +50,8 @@ with st.sidebar:
     st.subheader("TRAINED DATASET INFORMATION ABOUT PASS & FAIL")
     st.markdown(
         """
-**PASS **    
-*Pass Grades in NECTA are A,B,C and D which are termed as 1 *     
+**PASS**    
+*Pass Grades in NECTA are A,B,C and D which are termed as 1*     
 
 **FAIL**          
 *Fail Grade in NECTA is only F which is termed as 0*
