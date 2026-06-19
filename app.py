@@ -79,6 +79,7 @@ A larger class reduces the log-odds of passing slightly -
 each additional student per teacher makes it marginally harder to pass.
 
 **School Type** `{:.4f}`  
+**Private** = *0 (Baseline)*, **Governmet** = *1*
 A negative coefficient means Government school students have
 **lower** log-odds of passing compared to Private school students,
 all other variables remain the same.
