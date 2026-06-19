@@ -69,7 +69,7 @@ with st.sidebar:
         "Coefficient": [round(coef[0], 4), round(coef[1], 4), round(coef[2], 4)], 
             })
     st.dataframe(coef_df, hide_index=True, use_container_width=True)
-    st.write(f"**Intercept:** {intercept:.4f}          This means the probability to pass is starting at 0.107245 when all variable is zero. But in real world enterpretation teacher to student ratio can never be zero"),
+    st.write(f"**Intercept:** {intercept:.4f}          This means the probability to pass is starting at 0.10724 when all variable is zero. But in real world enterpretation teacher to student ratio can never be zero"),
     st.markdown("---")
     st.subheader("INTERPRETATIONS")
     st.markdown(
@@ -165,8 +165,8 @@ if predict_clicked:
         st.error(f"  PREDICTION: FAIL   (Model: {model_name})")
 
     p1, p2 = st.columns(2)
-    p1.metric("Probability of Pass", f"{prob_pass :.6f}")
-    p2.metric("Probability of Fail", f"{prob_fail :.6f}")
+    p1.metric("Probability of Pass", f"{prob_pass :.5f}")
+    p2.metric("Probability of Fail", f"{prob_fail :.5f}")
     st.progress(prob_pass)
 
     # ── Suggestions ──────────────────────────────────────────────────────────
