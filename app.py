@@ -20,7 +20,7 @@ from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 
 DATA_FILE  = "Mwanza_maths_updated.csv"
 MOCK_ORDER = ["F", "D", "C", "B", "A"]
-SCHOOL_MAP = {"Private": 0, "Government": 1}
+SCHOOL_MAP = {"Private": 1, "Government": 2}
 FEATURE_COLS = ["teacher_to_student_ratio", "school_type_encoded", "mock_result_encoded"]
 
 st.set_page_config(
