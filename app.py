@@ -110,7 +110,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     teacher_student_ratio = st.number_input(
-        "Teacher-to-Student Ratio (1 : N)", step=0,
+        "Teacher-to-Student Ratio (1 : N)", min_value=1, step=0,
         help="Number of students per teacher.",
     )
     school_type = st.selectbox(
