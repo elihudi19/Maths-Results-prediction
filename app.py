@@ -207,10 +207,10 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     result_label = "PASS" if prediction == 1 else "FAIL"
     result_color = GREEN  if prediction == 1 else RED
     # Set the timezone to East Africa (Africa/Nairobi covers EAT)
-eat_tz = ZoneInfo("Africa/Nairobi")
+    eat_tz = ZoneInfo("Africa/Nairobi")
 
-# Get the current time in EAT and format it
-now = datetime.datetime.now(eat_tz).strftime("%d %B %Y, %H:%M")
+    # Get the current time in EAT and format it
+    now = datetime.datetime.now(eat_tz).strftime("%d %B %Y, %H:%M")
 
     story = [
         Paragraph("NECTA Mathematics Performance Prediction", title_s),
