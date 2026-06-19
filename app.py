@@ -113,7 +113,7 @@ with col1:
     )
     school_type = st.selectbox(
         "School Type",
-        options=["Government", "Private"],
+        options=["Private", "Government"],
     )
 
 with col2:
