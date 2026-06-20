@@ -262,7 +262,7 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     story += [
         Spacer(1, 0.6*cm),
         HRFlowable(width="100%", thickness=1, color=BLUE, spaceAfter=6),
-        Paragraph("Mwanza Mathematics Performance Prediction System — 2026", sub_s),
+        Paragraph("Mwanza Mathematics Performance Prediction System-2026", sub_s),
         Paragraph(
             "Developers: ELIHUDI T ELIAMINI (0756710637) | "
             "ERENEST D MANYAMA (+255 682 436 629)",
@@ -300,9 +300,9 @@ if predict_clicked:
     c3.metric("Mock Grade",         mock_grade)
 
     if prediction == 1:
-        st.success(f"✅  PREDICTION: **PASS**   (Model: {model_name})")
+        st.success(f"PREDICTION: **PASS**   (Model: {model_name})")
     else:
-        st.error(f"❌  PREDICTION: **FAIL**   (Model: {model_name})")
+        st.error(f"PREDICTION: **FAIL**   (Model: {model_name})")
 
     p1, p2 = st.columns(2)
     p1.metric("Probability of Pass", f"{prob_pass:.5f}")
@@ -339,7 +339,7 @@ if predict_clicked:
         if mock_grade == "A":
             message = "Great job! Your hard work really shows. Keep it up!"
         elif mock_grade == "B":
-            message = "Good job! You did very well — keep pushing for the top."
+            message = "Good job! You did very well-keep pushing for the top."
         elif mock_grade == "C":
             message = "Nice work! You passed, but you can do even better next time."
         else:
