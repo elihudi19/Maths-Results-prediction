@@ -103,7 +103,9 @@ with st.sidebar:
         st.markdown(
             f"""
 **Intercept: {intercept:.4f}**  
-Starting log-odds when all encoded features are zero (Private school, F mock grade, ratio = 0).
+This means probability of student to pass is starting **0.10724** When all variable are zero.
+School Type:**Private = 0** and Mock Grade:**F = 0** During Encoding Process and Teacher to student ratio **= 0**.
+But in realy world interpretations Teacher to student ratio cannot be zero.
 
 **Teacher-to-Student Ratio** `{coef[0]:.4f}`  
 A larger class reduces the log-odds of passing slightly -
@@ -153,7 +155,7 @@ with col1:
 with col2:
     mock_grade = st.selectbox(
         "Mock Exam Grade",
-        options=MOCK_ORDER,
+        options=MOCK_ORDER -1,
         help="Grade obtained in the mock exam (A is best, F is worst).",
     )
 
