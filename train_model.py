@@ -33,7 +33,6 @@ import joblib
 # --------------------------------------------------------------
 # Configuration (must match the original notebook)
 # --------------------------------------------------------------
-DATA_FILE = "Mwanza_maths_updated.csv"
 MODEL_FILE = "model_artifacts.pkl"
 
 FEATURE_COLS = ["teacher_to_student_ratio", "school_type_encoded", "mock_result_encoded"]
