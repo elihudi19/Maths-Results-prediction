@@ -152,13 +152,11 @@ with col1:
         options=["Private", "Government"],
     )
 
-with col2:
     mock_grade = st.selectbox(
         "Mock Exam Grade",
-        options=MOCK_ORDER -1,
+        options=["F", "D", "C", "B", "A"],
         help="Grade obtained in the mock exam (A is best, F is worst).",
     )
-
 st.markdown("")
 predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
