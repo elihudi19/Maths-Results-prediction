@@ -17,9 +17,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 )
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
-
 MODEL_FILE = "model_artifacts.pkl"
-
 st.set_page_config(
     page_title="NECTA Mathematics Performance Predictor",
     page_icon="📊",
