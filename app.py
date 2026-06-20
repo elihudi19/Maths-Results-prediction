@@ -102,20 +102,20 @@ with st.sidebar:
         st.subheader("INTERPRETATIONS")
         st.markdown(
             f"""
-**Intercept: {intercept:.4f}**
+**Intercept: {intercept:.4f}**  
 Starting log-odds when all encoded features are zero (Private school, F mock grade, ratio = 0).
 
-**Teacher-to-Student Ratio** `{coef[0]:.4f}`
-A larger class reduces the log-odds of passing slightly —
+**Teacher-to-Student Ratio** `{coef[0]:.4f}`  
+A larger class reduces the log-odds of passing slightly -
 each additional student per teacher makes it marginally harder to pass.
 
-**School Type** `{coef[1]:.4f}`
+**School Type** `{coef[1]:.4f}`   
 **Private = 0 (Baseline)**, **Government = 1**
 A negative coefficient means Government school students have
 **lower** log-odds of passing compared to Private school students,
 all other variables being equal.
 
-**Mock Exam Grade** `{coef[2]:.4f}`
+**Mock Exam Grade** `{coef[2]:.4f}`  
 The strongest predictor. Each grade step up (F→D→C→B→A)
 substantially increases the log-odds of passing NECTA.
             """
@@ -125,10 +125,10 @@ substantially increases the log-odds of passing NECTA.
     st.subheader("DEVELOPER INFORMATION")
     st.markdown(
         """
-**ELIHUDI T ELIAMINI**
+**ELIHUDI T ELIAMINI**  
 *Contact: 0756710637*
 
-**ERENEST D MANYAMA**
+**ERENEST D MANYAMA**   
 *Contact: +255 682 436 629*
         """
     )
@@ -142,14 +142,12 @@ col1, col2 = st.columns(2)
 with col1:
     teacher_student_ratio = st.number_input(
         "Teacher-to-Student Ratio (1 : N)",
-        min_value=1,
         step=1,
-        value=40,
         help="Number of students per teacher.",
     )
     school_type = st.selectbox(
         "School Type",
-        options=["Government", "Private"],
+        options=["Private", "Government"],
     )
 
 with col2:
@@ -160,7 +158,7 @@ with col2:
     )
 
 st.markdown("")
-predict_clicked = st.button("🔍 Predict", type="primary", use_container_width=True)
+predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
 
 # ── PDF generation ────────────────────────────────────────────────────────────
