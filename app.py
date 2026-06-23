@@ -49,7 +49,7 @@ def load_artifacts():
 artifacts = load_artifacts()
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.title("📊 Mathematics Performance Predictor")
+st.title("**NECTA** Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
     "**Pass** or **Fail** the NECTA Form Four Mathematics examination."
