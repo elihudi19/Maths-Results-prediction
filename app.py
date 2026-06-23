@@ -34,7 +34,7 @@ SCHOOL_MAP  = {"Government": 1, "Private": 0}
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="📊 NECTA Mathematics Performance Predictor",
+    page_title="NECTA Mathematics Performance Predictor",
     page_icon="📊",
     layout="centered",
 )
@@ -49,7 +49,7 @@ def load_artifacts():
 artifacts = load_artifacts()
 
 # ── Header ────────────────────────────────────────────────────────────────────
-st.title("**NECTA** Mathematics Performance Predictor")
+st.title("📊NECTA Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
     "**Pass** or **Fail** the NECTA Form Four Mathematics examination."
