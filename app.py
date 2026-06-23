@@ -34,7 +34,7 @@ SCHOOL_MAP  = {"Government": 1, "Private": 0}
 
 # ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="NECTA Mathematics Performance Predictor",
+    page_title="📊NECTA Mathematics Performance Predictor",
     page_icon="📊",
     layout="centered",
 )
