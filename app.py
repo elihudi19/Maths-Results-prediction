@@ -27,12 +27,12 @@ from reportlab.platypus import (
     HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
-# ── Constants ─────────────────────────────────────────────────────────────────
+# ── Constants ────────────────────────────────────────────────────────────[...]
 MODEL_FILE  = "model_artifacts.pkl"
 MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best → worst (display order)
 SCHOOL_MAP  = {"Government": 1, "Private": 0}
 
-# ── Page config ───────────────────────────────────────────────────────────────
+# ── Page config ──────────────────────────────────────────────────────────[...]
 st.set_page_config(
     page_title="NECTA Mathematics Performance Predictor",
     page_icon="📊",
@@ -48,7 +48,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-# ── Header ────────────────────────────────────────────────────────────────────
+# ── Header ────────────────────────────────────────────────────────────[...]
 st.title("📊NECTA Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
@@ -68,7 +68,7 @@ oe_mock      = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
 accuracy     = artifacts["accuracy"]
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ── Sidebar ──────────────────────────────────────────────────────────[...]
 with st.sidebar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
@@ -135,7 +135,7 @@ substantially increases the log-odds of passing NECTA.
         """
     )
 
-# ── Input form ────────────────────────────────────────────────────────────────
+# ── Input form ──────────────────────────────────────────────────────────[...]
 st.markdown("---")
 st.subheader("Enter Student Data")
 
@@ -161,7 +161,7 @@ st.markdown("")
 predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
 
-# ── PDF generation ────────────────────────────────────────────────────────────
+# ── PDF generation ──────────────────────────────────────────────────────────[...]
 def generate_pdf(school_type, ratio, mock_grade, model_name,
                  prediction, prob_pass, prob_fail, message, suggestions):
     buffer = io.BytesIO()
@@ -275,7 +275,54 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     return buffer
 
 
-# ── Prediction ────────────────────────────────────────────────────────────────
+# ── Helper function to determine message and color based on probability ──────
+def get_message_and_color(prob_pass):
+    """
+    Determine student message and background color based on probability of pass.
+    
+    Probability ranges:
+    - 0.7 to 1.0: Good job! Maintain a progress
+    - 0.5 to 0.69: Study hard to maintain Progress
+    - 0.0 to 0.49: You are at risk, Study hard.
+    """
+    if prob_pass >= 0.7:
+        message = "Good job! Maintain a progress"
+        color_hex = "rgba(0, 208, 132, 0.3)"  # Green
+        suggestions_header = "Suggestions to maintain and improve performance:"
+        suggestion_lines = [
+            "1. Keep up current study discipline and avoid overconfidence.",
+            "2. Engage in peer tutoring to reinforce personal understanding.",
+            "3. Teachers should track progress through regular short tests.",
+            "4. Attempt advanced NECTA questions to maximise the final grade.",
+            "5. Maintain good health and sleep habits during the exam period.",
+        ]
+    elif prob_pass >= 0.5:
+        message = "Study hard to maintain Progress"
+        color_hex = "rgba(255, 165, 0, 0.3)"  # Orange
+        suggestions_header = "Suggestions to improve and maintain performance:"
+        suggestion_lines = [
+            "1. Focus on understanding weak concept areas in Mathematics.",
+            "2. Increase study time and consistency in revision.",
+            "3. Work with classmates on challenging topics through group study.",
+            "4. Practice past NECTA papers regularly under timed conditions.",
+            "5. Seek help from teachers for areas of difficulty.",
+        ]
+    else:
+        message = "You are at risk, Study hard."
+        color_hex = "rgba(255, 68, 68, 0.3)"  # Red
+        suggestions_header = "Suggestions to improve performance:"
+        suggestion_lines = [
+            "1. Enrol in remedial Mathematics classes focusing on weak topic areas.",
+            "2. Teachers should use group assignments to keep large classes engaged.",
+            "3. School should create a textbook-sharing or library rotation system.",
+            "4. Student should practise past NECTA papers under timed conditions.",
+            "5. Parents/guardians should be informed and support a structured home-study plan.",
+        ]
+    
+    return message, color_hex, suggestions_header, suggestion_lines
+
+
+# ── Prediction ──────────────────────────────────────────────────────────[...]
 if predict_clicked:
     school_encoded = SCHOOL_MAP[school_type]
     mock_encoded   = int(
@@ -309,49 +356,12 @@ if predict_clicked:
     p2.metric("Probability of Fail", f"{prob_fail:.5f}")
     st.progress(prob_pass)
 
-    # ── Suggestions ──────────────────────────────────────────────────────────
+    # ── Suggestions ────────────────────────────────────────────────────────[...]
     st.markdown("---")
     st.subheader("SUGGESTIONS")
 
-    grade_colors = {
-        "A": "rgba(0, 208, 132, 0.3)",
-        "B": "rgba(0, 153, 255, 0.3)",
-        "C": "rgba(255, 165, 0,  0.3)",
-        "D": "rgba(255, 215, 0,  0.3)",
-        "F": "rgba(255, 68,  68, 0.3)",
-    }
-    color_hex = grade_colors.get(mock_grade, "rgba(128,128,128,0.3)")
-
-    if prediction == 0:
-        message = (
-            "The student is at <b>HIGH</b> risk of failing; "
-            "urgent intervention is needed."
-        )
-        suggestion_lines = [
-            "1. Enrol in remedial Mathematics classes focusing on weak topic areas.",
-            "2. Teachers should use group assignments to keep large classes engaged.",
-            "3. School should create a textbook-sharing or library rotation system.",
-            "4. Student should practise past NECTA papers under timed conditions.",
-            "5. Parents/guardians should be informed and support a structured home-study plan.",
-        ]
-        pdf_header = "Suggestions to improve performance:"
-    else:
-        if mock_grade == "A":
-            message = "Great job! Your hard work really shows. Keep it up!"
-        elif mock_grade == "B":
-            message = "Good job! You did very well-keep pushing for the top."
-        elif mock_grade == "C":
-            message = "Nice work! You passed, but you can do even better next time."
-        else:
-            message = "You passed! It was close, so let's study harder next time."
-        suggestion_lines = [
-            "1. Keep up current study discipline and avoid overconfidence.",
-            "2. Engage in peer tutoring to reinforce personal understanding.",
-            "3. Teachers should track progress through regular short tests.",
-            "4. Attempt advanced NECTA questions to maximise the final grade.",
-            "5. Maintain good health and sleep habits during the exam period.",
-        ]
-        pdf_header = "Suggestions to maintain and improve performance:"
+    # Get message, color, and suggestions based on probability score
+    message, color_hex, pdf_header, suggestion_lines = get_message_and_color(prob_pass)
 
     suggestions_html = "<br>".join(suggestion_lines)
 
@@ -379,7 +389,7 @@ if predict_clicked:
     )
 
     st.markdown("")
-    plain_message = message.replace("<b>", "").replace("</b>", "")
+    plain_message = message
 
     pdf_buffer = generate_pdf(
         school_type=school_type,
