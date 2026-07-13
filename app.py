@@ -48,7 +48,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-# ── Header ────────────────────────────────────────────────────────────[...]
+# ── Header ────────────────────────────────────────────────────────────[...[...]
 st.title("📊NECTA Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
@@ -161,7 +161,7 @@ st.markdown("")
 predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
 
-# ── PDF generation ──────────────────────────────────────────────────────────[...]
+# ── PDF generation ──────────────────────────────────────────────────────────[.[...]
 def generate_pdf(school_type, ratio, mock_grade, model_name,
                  prediction, prob_pass, prob_fail, message, suggestions):
     buffer = io.BytesIO()
@@ -195,6 +195,18 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     eat_tz = ZoneInfo("Africa/Nairobi")
     now    = datetime.datetime.now(eat_tz).strftime("%d %B %Y, %H:%M")
 
+    # Build result table with only the relevant probability
+    if prediction == 1:
+        result_table_data = [
+            ["PREDICTED OUTCOME",   result_label],
+            ["Probability of Pass", f"{prob_pass:.5f}"],
+        ]
+    else:
+        result_table_data = [
+            ["PREDICTED OUTCOME",   result_label],
+            ["Probability of Fail", f"{prob_fail:.5f}"],
+        ]
+
     story = [
         Paragraph("NECTA Mathematics Performance Prediction", title_s),
         Paragraph(f"Generated on {now} (EAT)", sub_s),
@@ -226,11 +238,7 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
 
         Paragraph("Prediction Result", head_s),
         Table(
-            [
-                ["PREDICTED OUTCOME",   result_label],
-                ["Probability of Pass", f"{prob_pass:.5f}"],
-                ["Probability of Fail", f"{prob_fail:.5f}"],
-            ],
+            result_table_data,
             colWidths=[7*cm, 9*cm],
             style=TableStyle([
                 ("BACKGROUND",    (0, 0), (-1, 0), result_color),
@@ -351,10 +359,13 @@ if predict_clicked:
     else:
         st.error(f"PREDICTION: **FAIL**   (Model: {model_name})")
 
-    p1, p2 = st.columns(2)
-    p1.metric("Probability of Pass", f"{prob_pass:.5f}")
-    p2.metric("Probability of Fail", f"{prob_fail:.5f}")
-    st.progress(prob_pass)
+    # Display only the relevant probability based on prediction
+    if prediction == 1:
+        st.metric("Probability of Pass", f"{prob_pass:.5f}")
+        st.progress(prob_pass)
+    else:
+        st.metric("Probability of Fail", f"{prob_fail:.5f}")
+        st.progress(prob_fail)
 
     # ── Suggestions ────────────────────────────────────────────────────────[...]
     st.markdown("---")
