@@ -27,7 +27,7 @@ from reportlab.platypus import (
     HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
-# ── Constants ────────────────────────────────────────────────────────────[...]
+# ── Constants ────────────────────────────────────────────────────────────[[...]
 MODEL_FILE  = "model_artifacts.pkl"
 MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best → worst (display order)
 SCHOOL_MAP  = {"Government": 1, "Private": 0}
@@ -161,9 +161,9 @@ st.markdown("")
 predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
 
-# ── PDF generation ──────────────────────────────────────────────────────────[.[...]
+# ── PDF generation ────────────────────────────────────────��─────────────────[.[...]
 def generate_pdf(school_type, ratio, mock_grade, model_name,
-                 prediction, prob_pass, prob_fail, message, suggestions):
+                 prediction, prob_pass, prob_fail, message, suggestions, message_color):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
@@ -296,6 +296,7 @@ def get_message_and_color(prob_pass):
     if prob_pass >= 0.7:
         message = "Good job! Maintain a progress"
         color_hex = "rgba(0, 208, 132, 0.3)"  # Green
+        pdf_color = colors.HexColor("#00D084")  # Solid green for PDF
         suggestions_header = "Suggestions to maintain and improve performance:"
         suggestion_lines = [
             "1. Keep up current study discipline and avoid overconfidence.",
@@ -307,6 +308,7 @@ def get_message_and_color(prob_pass):
     elif prob_pass >= 0.5:
         message = "Study hard to maintain Progress"
         color_hex = "rgba(255, 165, 0, 0.3)"  # Orange
+        pdf_color = colors.HexColor("#FFA500")  # Solid orange for PDF
         suggestions_header = "Suggestions to improve and maintain performance:"
         suggestion_lines = [
             "1. Focus on understanding weak concept areas in Mathematics.",
@@ -318,6 +320,7 @@ def get_message_and_color(prob_pass):
     else:
         message = "You are at risk, Study hard."
         color_hex = "rgba(255, 68, 68, 0.3)"  # Red
+        pdf_color = colors.HexColor("#FF4444")  # Solid red for PDF
         suggestions_header = "Suggestions to improve performance:"
         suggestion_lines = [
             "1. Enrol in remedial Mathematics classes focusing on weak topic areas.",
@@ -327,7 +330,7 @@ def get_message_and_color(prob_pass):
             "5. Parents/guardians should be informed and support a structured home-study plan.",
         ]
     
-    return message, color_hex, suggestions_header, suggestion_lines
+    return message, color_hex, suggestions_header, suggestion_lines, pdf_color
 
 
 # ── Prediction ──────────────────────────────────────────────────────────[...]
@@ -372,7 +375,7 @@ if predict_clicked:
     st.subheader("SUGGESTIONS")
 
     # Get message, color, and suggestions based on probability score
-    message, color_hex, pdf_header, suggestion_lines = get_message_and_color(prob_pass)
+    message, color_hex, pdf_header, suggestion_lines, pdf_color = get_message_and_color(prob_pass)
 
     suggestions_html = "<br>".join(suggestion_lines)
 
@@ -412,6 +415,7 @@ if predict_clicked:
         prob_fail=prob_fail,
         message=plain_message,
         suggestions=[pdf_header] + suggestion_lines,
+        message_color=pdf_color,
     )
 
     st.download_button(
