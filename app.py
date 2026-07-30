@@ -3,6 +3,13 @@ app.py
 ======
 Streamlit app for the Mwanza Mathematics Performance Predictor.
 
+3-variable version (Teacher-to-Student Ratio, School Type, Mock Exam Grade)
+with an AUTOMATIC, per-student personalised suggestion system — each
+suggestion is generated dynamically from how much that student's own inputs
+are pulling their prediction up or down (via the logistic regression
+coefficients), instead of a single static message picked from a probability
+bucket.
+
 Run ONCE before launching:
     python train_model.py
 
@@ -27,19 +34,25 @@ from reportlab.platypus import (
     HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
-# ---- Constants ------------------------------------------------------------
+# ── Constants ──────────────────────────────────────────────────────────────
 MODEL_FILE  = "model_artifacts.pkl"
-MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best to worst (display order)
+MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best → worst (display order)
 SCHOOL_MAP  = {"Government": 1, "Private": 0}
 
-# ---- Page config ------------------------------------------------------------
+FRIENDLY_NAMES = {
+    "ratio":  "Teacher-to-Student Ratio",
+    "school": "School Type",
+    "mock":   "Mock Exam Grade",
+}
+
+# ── Page config ──────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="NECTA Mathematics Performance Predictor",
     page_icon="📊",
     layout="centered",
 )
 
-# ---- Load model artifacts ------------------------------------------------------------
+# ── Load model artifacts ──────────────────────────────────────────────────
 @st.cache_resource
 def load_artifacts():
     if not os.path.exists(MODEL_FILE):
@@ -48,7 +61,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-# ---- Header ------------------------------------------------------------
+# ── Header ─────────────────────────────────────────────────────────────
 st.title("📊NECTA Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
@@ -68,7 +81,9 @@ oe_mock      = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
 accuracy     = artifacts["accuracy"]
 
-# ---- Sidebar ------------------------------------------------------------
+HAS_COEF = hasattr(model, "coef_")
+
+# ── Sidebar ────────────────────────────────────────────────────────────
 with st.sidebar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
@@ -79,15 +94,15 @@ with st.sidebar:
     st.markdown(
         """
 **PASS**
-*Grades A, B, C and D to coded as 1*
+*Grades A, B, C and D → coded as 1*
 
 **FAIL**
-*Grade F only to coded as 0*
+*Grade F only → coded as 0*
         """
     )
 
     st.markdown("---")
-    if hasattr(model, "coef_"):
+    if HAS_COEF:
         st.subheader("Feature Coefficients")
         coef      = model.coef_[0]
         intercept = model.intercept_[0]
@@ -108,7 +123,7 @@ School Type:**Private = 0** and Mock Grade:**F = 0** During Encoding Process and
 But in realy world interpretations Teacher to student ratio cannot be zero.
 
 **Teacher-to-Student Ratio** `{coef[0]:.4f}`  
-A larger class reduces the log-odds of passing slightly,
+A larger class reduces the log-odds of passing slightly -
 each additional student per teacher makes it marginally harder to pass.
 
 **School Type** `{coef[1]:.4f}`   
@@ -118,7 +133,7 @@ A negative coefficient means Government school students have
 all other variables being equal.
 
 **Mock Exam Grade** `{coef[2]:.4f}`  
-The strongest predictor. Each grade step up (F to D to C to B to A)
+The strongest predictor. Each grade step up (F→D→C→B→A)
 substantially increases the log-odds of passing NECTA.
             """
         )
@@ -135,7 +150,7 @@ substantially increases the log-odds of passing NECTA.
         """
     )
 
-# ---- Input form ------------------------------------------------------------
+# ── Input form ─────────────────────────────────────────────────────────
 st.markdown("---")
 st.subheader("Enter Student Data")
 
@@ -162,9 +177,92 @@ st.markdown("")
 predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
 
-# ---- PDF generation ------------------------------------------------------------
+# ── Automatic personalised-suggestion engine ────────────────────────────
+def compute_contributions(ratio, school_encoded, mock_encoded, model):
+    """
+    Work out how much each of the 3 inputs is currently pushing THIS
+    student's log-odds of passing up or down, relative to the best
+    possible state for that variable. A negative contribution means the
+    variable is currently a risk factor (pulling toward FAIL); a
+    contribution of zero or higher means it's already at (or helping
+    toward) its best state.
+
+    - Teacher-to-Student Ratio: continuous. Best case is the smallest
+      possible ratio (1 : 1), so contribution = (ratio - 1) * coef.
+    - School Type: categorical (0/1). Best category is whichever
+      encoding the coefficient's sign favours.
+    - Mock Exam Grade: ordinal. Best category is grade "A", so
+      contribution is scored relative to A's encoded value.
+    """
+    coef = model.coef_[0]
+    ratio_coef, school_coef, mock_coef = coef[0], coef[1], coef[2]
+
+    ratio_contribution = (ratio - 1) * ratio_coef
+
+    best_school_value = 1.0 if school_coef > 0 else 0.0
+    school_contribution = (school_encoded - best_school_value) * school_coef
+
+    best_mock_encoded = int(
+        oe_mock.transform(pd.DataFrame([["A"]], columns=["mock_result"]))[0][0]
+    )
+    mock_contribution = (mock_encoded - best_mock_encoded) * mock_coef
+
+    return {
+        "ratio":  ratio_contribution,
+        "school": school_contribution,
+        "mock":   mock_contribution,
+    }
+
+
+def suggestion_for(feature, raw_value):
+    """Actionable suggestion for a factor currently working against the student."""
+    table = {
+        "ratio": (
+            f"The teacher-to-student ratio (1:{int(raw_value)}) is high, which "
+            "typically means less individual attention per student. Advocate for "
+            "smaller class sizes, additional tutoring sessions, or peer study "
+            "groups to help offset this."
+        ),
+        "school": (
+            "This school type is associated with a lower average pass rate in the "
+            "training data (often linked to fewer resources or larger classes). "
+            "A structured personal timetable with dedicated study hours, plus "
+            "resource-sharing with better-resourced schools, can help offset this."
+        ),
+        "mock": (
+            f"The mock exam grade ({raw_value}) suggests the student is not yet "
+            "fully prepared. Focus revision on the specific topics that were "
+            "missed in the mock, and practise past NECTA papers under timed "
+            "conditions."
+        ),
+    }
+    return table.get(feature, "Review this factor with a teacher for tailored advice.")
+
+
+def strength_note_for(feature, raw_value):
+    """Positive reinforcement message for a factor already working in the student's favour."""
+    table = {
+        "ratio": (
+            f"A teacher-to-student ratio of 1:{int(raw_value)} is favourable and "
+            "supports the passing prediction."
+        ),
+        "school": (
+            "This school type is associated with a stronger studying environment "
+            "in the training data, which is currently working in the student's "
+            "favour."
+        ),
+        "mock": (
+            f"The mock exam grade ({raw_value}) is a strong positive signal — "
+            "keep up this momentum leading into the final exam."
+        ),
+    }
+    return table.get(feature, "This factor is currently helping.")
+
+
+# ── PDF generation ───────────────────────────────────────────────────────
 def generate_pdf(school_type, ratio, mock_grade, model_name,
-                 prediction, prob_pass, prob_fail, message, suggestions, message_color):
+                 prediction, prob_pass, prob_fail, risk_factors, positive_factors,
+                 raw_values):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A4,
@@ -190,13 +288,15 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     body_s  = ParagraphStyle("BodyS", parent=styles["Normal"],
                              fontSize=11, leading=17, spaceAfter=4,
                              alignment=TA_JUSTIFY)
+    factor_head_s = ParagraphStyle("FactorHeadS", parent=styles["Normal"],
+                             fontSize=11, leading=17, spaceBefore=6,
+                             fontName="Helvetica-Bold")
 
     result_label = "PASS" if prediction == 1 else "FAIL"
     result_color = GREEN  if prediction == 1 else RED
     eat_tz = ZoneInfo("Africa/Nairobi")
     now    = datetime.datetime.now(eat_tz).strftime("%d %B %Y, %H:%M")
 
-    # Build result table with only the relevant probability
     if prediction == 1:
         result_table_data = [
             ["PREDICTED OUTCOME",   result_label],
@@ -257,16 +357,33 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
         ),
         Spacer(1, 0.3*cm),
 
-        Paragraph("Student's Message", head_s),
-        Paragraph(message, body_s),
-        Spacer(1, 0.2*cm),
-
-        Paragraph("Suggestions", head_s),
+        Paragraph("Personalised Suggestions", head_s),
         HRFlowable(width="100%", thickness=0.5, color=colors.lightgrey, spaceAfter=6),
     ]
 
-    for line in suggestions:
-        story.append(Paragraph(line, body_s))
+    if not risk_factors:
+        story.append(Paragraph(
+            "All measured factors are currently working in this student's favour. "
+            "Keep up the strong routine!", body_s
+        ))
+    else:
+        story.append(Paragraph(
+            "All factors below are currently reducing this student's chance of "
+            "passing, ranked from most to least impactful:", body_s
+        ))
+        for i, (feat, contrib) in enumerate(risk_factors, start=1):
+            friendly = FRIENDLY_NAMES.get(feat, feat)
+            text = suggestion_for(feat, raw_values[feat])
+            story.append(Paragraph(f"{i}. {friendly}", factor_head_s))
+            story.append(Paragraph(text, body_s))
+
+    if positive_factors:
+        story.append(Spacer(1, 0.2*cm))
+        story.append(Paragraph("Factors Already Working Well", head_s))
+        for feat, contrib in positive_factors:
+            friendly = FRIENDLY_NAMES.get(feat, feat)
+            note = strength_note_for(feat, raw_values[feat])
+            story.append(Paragraph(f"{friendly}: {note}", body_s))
 
     story += [
         Spacer(1, 0.6*cm),
@@ -284,121 +401,7 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     return buffer
 
 
-# ---- Dynamic, contribution-based suggestions ------------------------------------------------------------
-def describe_weak_feature(feature, ratio, school_type, mock_grade):
-    """
-    Plain-language, student-specific suggestion for a variable that is
-    actively pulling this student toward failing.
-    """
-    if feature == "ratio":
-        return (
-            f"Teacher to student ratio of 1:{int(ratio)} is currently working against "
-            "this student. Reducing effective class size through group tutoring or "
-            "extra teacher time would help."
-        )
-
-    if feature == "school":
-        return (
-            f"Attending a {school_type} school is associated with lower odds of passing "
-            "for this student. Extra revision resources, past papers and remedial classes "
-            "can help close this gap."
-        )
-
-    if feature == "mock":
-        return (
-            f"The mock exam grade of {mock_grade} is the biggest factor pulling this "
-            "student down. Focused revision on weak topics and timed practice with past "
-            "NECTA papers is strongly recommended."
-        )
-
-    return "Continue regular revision and practice."
-
-
-def build_dynamic_suggestions(model, ratio, school_encoded, mock_encoded, school_type, mock_grade):
-    """
-    Look at each variable's actual contribution (coefficient times
-    value) to this student's model score, and generate a suggestion
-    ONLY for the variable(s) that are actually reaching the point of
-    pulling the student toward failing (a negative contribution).
-
-    Variables that are already working in the student's favor are
-    left out, since they do not need fixing. Ordered so the variable
-    causing the most damage appears first.
-
-    Falls back to a short generic list if the loaded model has no
-    coefficients (e.g. a non-linear model), since contribution signs
-    cannot be computed in that case.
-    """
-    if not hasattr(model, "coef_"):
-        return [
-            "1. Focus on understanding weak concept areas in Mathematics.",
-            "2. Increase study time and consistency in revision.",
-            "3. Practice past NECTA papers regularly under timed conditions.",
-        ]
-
-    coef = model.coef_[0]
-    contributions = [
-        ("ratio",  coef[0] * ratio),
-        ("school", coef[1] * school_encoded),
-        ("mock",   coef[2] * mock_encoded),
-    ]
-
-    # Only keep variables that are actually causing/contributing to a fail
-    weak_points = [item for item in contributions if item[1] < 0]
-    weak_points.sort(key=lambda item: item[1])  # most damaging first
-
-    if not weak_points:
-        return [
-            "1. Teacher to student ratio, school type and mock exam grade are all "
-            "currently working in this student's favor. Keep up the same routine "
-            "and consistency to stay on track."
-        ]
-
-    lines = []
-    for i, (feature, _value) in enumerate(weak_points, start=1):
-        lines.append(f"{i}. {describe_weak_feature(feature, ratio, school_type, mock_grade)}")
-    return lines
-
-
-def get_message_and_suggestions(prob_pass, model, ratio, school_encoded, mock_encoded,
-                                school_type, mock_grade):
-    """
-    Determine student message, header color, and suggestions.
-
-    The overall message and color still depend on the probability
-    band, but the suggestions themselves are now generated per
-    student from the actual contribution of each variable instead
-    of being a fixed static list.
-
-    Probability ranges:
-    - 0.7 to 1.0: Good job! Maintain a progress
-    - 0.5 to 0.69: Study hard to maintain Progress
-    - 0.0 to 0.49: You are at risk, Study hard.
-    """
-    if prob_pass >= 0.7:
-        message = "Good job! Maintain a progress"
-        color_hex = "rgba(0, 208, 132, 0.3)"  # Green
-        pdf_color = colors.HexColor("#00D084")  # Solid green for PDF
-        suggestions_header = "Suggestions to maintain and improve performance:"
-    elif prob_pass >= 0.5:
-        message = "Study hard to maintain Progress"
-        color_hex = "rgba(255, 165, 0, 0.3)"  # Orange
-        pdf_color = colors.HexColor("#FFA500")  # Solid orange for PDF
-        suggestions_header = "Suggestions to improve and maintain performance:"
-    else:
-        message = "You are at risk, Study hard."
-        color_hex = "rgba(255, 68, 68, 0.3)"  # Red
-        pdf_color = colors.HexColor("#FF4444")  # Solid red for PDF
-        suggestions_header = "Suggestions to improve performance:"
-
-    suggestion_lines = build_dynamic_suggestions(
-        model, ratio, school_encoded, mock_encoded, school_type, mock_grade
-    )
-
-    return message, color_hex, suggestions_header, suggestion_lines, pdf_color
-
-
-# ---- Prediction ------------------------------------------------------------
+# ── Prediction ───────────────────────────────────────────────────────────
 if predict_clicked:
     school_encoded = SCHOOL_MAP[school_type]
     mock_encoded   = int(
@@ -427,7 +430,6 @@ if predict_clicked:
     else:
         st.error(f"PREDICTION: **FAIL**   (Model: {model_name})")
 
-    # Display only the relevant probability based on prediction
     if prediction == 1:
         st.metric("Probability of Pass", f"{prob_pass:.5f}")
         st.progress(prob_pass)
@@ -435,45 +437,85 @@ if predict_clicked:
         st.metric("Probability of Fail", f"{prob_fail:.5f}")
         st.progress(prob_fail)
 
-    # ---- Suggestions ------------------------------------------------------------
+    # ── Automatic personalised suggestions ───────────────────────────────
     st.markdown("---")
-    st.subheader("SUGGESTIONS")
+    st.subheader("PERSONALISED SUGGESTIONS")
 
-    # Message and color are still probability-based, but the
-    # suggestions are now generated from this student's own
-    # variable contributions.
-    message, color_hex, pdf_header, suggestion_lines, pdf_color = get_message_and_suggestions(
-        prob_pass, model, teacher_student_ratio, school_encoded, mock_encoded,
-        school_type, mock_grade,
-    )
+    if not HAS_COEF:
+        st.warning(
+            f"The loaded model ('{model_name}') doesn't expose coefficients, so "
+            "personalised, factor-by-factor suggestions can't be generated for it. "
+            "Suggestions require a linear model such as Logistic Regression."
+        )
+        risk_factors, positive_factors = [], []
+        raw_values = {}
+    else:
+        contributions = compute_contributions(
+            teacher_student_ratio, school_encoded, mock_encoded, model
+        )
+        raw_values = {
+            "ratio":  teacher_student_ratio,
+            "school": school_type,
+            "mock":   mock_grade,
+        }
 
-    suggestions_html = "<br>".join(suggestion_lines)
+        sorted_factors   = sorted(contributions.items(), key=lambda kv: kv[1])
+        risk_factors     = [f for f in sorted_factors if f[1] < 0]
+        positive_factors = [f for f in sorted_factors if f[1] >= 0]
 
-    st.markdown(
-        f"""
-        <div style="background-color:{color_hex}; padding:15px; border-radius:10px;
-                    border-left:5px solid gray;">
-            <h4 style="color:black; margin-top:0;">STUDENT'S MESSAGE</h4>
-            <p style="color:black; font-size:16px; margin-bottom:0;">{message}</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        overall_color = "rgba(0, 208, 132, 0.3)" if prob_pass >= 0.7 else (
+            "rgba(255, 165, 0, 0.3)" if prob_pass >= 0.5 else "rgba(255, 68, 68, 0.3)"
+        )
 
-    st.markdown(
-        f"""
-        <div style="background-color:{color_hex}; padding:15px; border-radius:10px;
-                    border-left:5px solid gray; margin-top:15px;">
-            <p style="color:black; font-size:14px; line-height:1.8; margin:0;">
-                <b>{pdf_header}</b><br>{suggestions_html}
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        if not risk_factors:
+            risk_html = (
+                "<p style='color:black; margin:0;'>All measured factors are "
+                "currently working in this student's favour. Keep up the strong routine!</p>"
+            )
+        else:
+            lines = []
+            for i, (feat, contrib) in enumerate(risk_factors, start=1):
+                friendly = FRIENDLY_NAMES.get(feat, feat)
+                text = suggestion_for(feat, raw_values[feat])
+                lines.append(f"<b>{i}. {friendly}</b><br>{text}")
+            risk_html = (
+                "<p style='color:black; margin:0 0 8px 0;'>All factors below are "
+                "currently reducing this student's chance of passing, ranked from "
+                "most to least impactful:</p>"
+                + "<br><br>".join(lines)
+            )
+
+        st.markdown(
+            f"""
+            <div style="background-color:{overall_color}; padding:15px; border-radius:10px;
+                        border-left:5px solid gray;">
+                <h4 style="color:black; margin-top:0;">FACTORS TO WORK ON</h4>
+                {risk_html}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if positive_factors:
+            strength_lines = []
+            for feat, contrib in positive_factors:
+                friendly = FRIENDLY_NAMES.get(feat, feat)
+                note = strength_note_for(feat, raw_values[feat])
+                strength_lines.append(f"<b>{friendly}</b>: {note}")
+            st.markdown(
+                f"""
+                <div style="background-color:rgba(0, 208, 132, 0.15); padding:15px; border-radius:10px;
+                            border-left:5px solid gray; margin-top:15px;">
+                    <h4 style="color:black; margin-top:0;">FACTORS ALREADY WORKING WELL</h4>
+                    <p style="color:black; font-size:14px; line-height:1.8; margin:0;">
+                        {"<br>".join(strength_lines)}
+                    </p>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
     st.markdown("")
-    plain_message = message
 
     pdf_buffer = generate_pdf(
         school_type=school_type,
@@ -483,9 +525,9 @@ if predict_clicked:
         prediction=prediction,
         prob_pass=prob_pass,
         prob_fail=prob_fail,
-        message=plain_message,
-        suggestions=[pdf_header] + suggestion_lines,
-        message_color=pdf_color,
+        risk_factors=risk_factors,
+        positive_factors=positive_factors,
+        raw_values=raw_values,
     )
 
     st.download_button(
