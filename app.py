@@ -19,6 +19,7 @@ Then launch the app:
 
 import io
 import os
+import math
 import datetime
 from zoneinfo import ZoneInfo
 
@@ -44,6 +45,25 @@ FRIENDLY_NAMES = {
     "school": "School Type",
     "mock":   "Mock Exam Grade",
 }
+
+
+def safe_int(value, fallback=1):
+    """
+    Safely coerce a value to int. Handles None, NaN, and non-numeric
+    strings without raising — falls back to a sane default instead of
+    crashing the whole app (this is what protects against the
+    'int(nan)' ValueError that happens if a number_input is momentarily
+    cleared/invalid).
+    """
+    try:
+        if value is None:
+            return fallback
+        if isinstance(value, float) and math.isnan(value):
+            return fallback
+        return int(value)
+    except (TypeError, ValueError):
+        return fallback
+
 
 # ── Page config ──────────────────────────────────────────────────────────
 st.set_page_config(
@@ -159,6 +179,7 @@ col1, col2 = st.columns(2)
 with col1:
     teacher_student_ratio = st.number_input(
         "Teacher-to-Student Ratio (1 : N)",
+        min_value=1,
         step=1,
         value=1,
         help="Number of students per teacher.",
@@ -218,7 +239,7 @@ def suggestion_for(feature, raw_value):
     """Actionable suggestion for a factor currently working against the student."""
     table = {
         "ratio": (
-            f"The teacher-to-student ratio (1:{int(raw_value)}) is high, which "
+            f"The teacher-to-student ratio (1:{safe_int(raw_value)}) is high, which "
             "typically means less individual attention per student. Advocate for "
             "smaller class sizes, additional tutoring sessions, or peer study "
             "groups to help offset this."
@@ -243,7 +264,7 @@ def strength_note_for(feature, raw_value):
     """Positive reinforcement message for a factor already working in the student's favour."""
     table = {
         "ratio": (
-            f"A teacher-to-student ratio of 1:{int(raw_value)} is favourable and "
+            f"A teacher-to-student ratio of 1:{safe_int(raw_value)} is favourable and "
             "supports the passing prediction."
         ),
         "school": (
@@ -318,7 +339,7 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
         Table(
             [
                 ["School Type",              school_type],
-                ["Teacher-to-Student Ratio", f"1 : {int(ratio)}"],
+                ["Teacher-to-Student Ratio", f"1 : {safe_int(ratio)}"],
                 ["Mock Exam Grade",          mock_grade],
                 ["Model Used",               model_name],
             ],
@@ -403,6 +424,16 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
 
 # ── Prediction ───────────────────────────────────────────────────────────
 if predict_clicked:
+    # Guard against a cleared/invalid number input (None or NaN) before
+    # doing any math with it — this is what previously crashed the app.
+    if teacher_student_ratio is None or (
+        isinstance(teacher_student_ratio, float) and math.isnan(teacher_student_ratio)
+    ):
+        st.error("Please enter a valid Teacher-to-Student Ratio (a whole number of 1 or more).")
+        st.stop()
+
+    teacher_student_ratio = safe_int(teacher_student_ratio, fallback=1)
+
     school_encoded = SCHOOL_MAP[school_type]
     mock_encoded   = int(
         oe_mock.transform(pd.DataFrame([[mock_grade]], columns=["mock_result"]))[0][0]
@@ -422,7 +453,7 @@ if predict_clicked:
 
     c1, c2, c3 = st.columns(3)
     c1.metric("School Type",        school_type)
-    c2.metric("Teacher : Student",  f"1 : {int(teacher_student_ratio)}")
+    c2.metric("Teacher : Student",  f"1 : {teacher_student_ratio}")
     c3.metric("Mock Grade",         mock_grade)
 
     if prediction == 1:
@@ -441,14 +472,14 @@ if predict_clicked:
     st.markdown("---")
     st.subheader("PERSONALISED SUGGESTIONS")
 
+    risk_factors, positive_factors, raw_values = [], [], {}
+
     if not HAS_COEF:
         st.warning(
             f"The loaded model ('{model_name}') doesn't expose coefficients, so "
             "personalised, factor-by-factor suggestions can't be generated for it. "
             "Suggestions require a linear model such as Logistic Regression."
         )
-        risk_factors, positive_factors = [], []
-        raw_values = {}
     else:
         contributions = compute_contributions(
             teacher_student_ratio, school_encoded, mock_encoded, model
