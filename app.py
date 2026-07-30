@@ -4,11 +4,15 @@ app.py
 Streamlit app for the Mwanza Mathematics Performance Predictor.
 
 3-variable version (Teacher-to-Student Ratio, School Type, Mock Exam Grade)
-with an AUTOMATIC, per-student personalised suggestion system — each
+with an AUTOMATIC, per-student personalised suggestion system - each
 suggestion is generated dynamically from how much that student's own inputs
-are pulling their prediction up or down (via the logistic regression
-coefficients), instead of a single static message picked from a probability
-bucket.
+are pulling their prediction up or down, instead of a single static message
+picked from a probability bucket.
+
+Favourability rules applied explicitly:
+    - Teacher-to-Student Ratio: 1:100 or lower is favourable,
+      1:101 or higher is NOT favourable.
+    - Mock Exam Grade: C, B, or A is favourable; F or D is NOT favourable.
 
 Run ONCE before launching:
     python train_model.py
@@ -35,10 +39,14 @@ from reportlab.platypus import (
     HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
-# ── Constants ──────────────────────────────────────────────────────────────
+# --- Constants -------------------------------------------------------------
 MODEL_FILE  = "model_artifacts.pkl"
-MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best → worst (display order)
+MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best to worst (display order)
 SCHOOL_MAP  = {"Government": 1, "Private": 0}
+
+RATIO_FAVOURABLE_MAX = 100     # 1:100 or lower is favourable
+MOCK_FAVOURABLE_GRADES = {"C", "B", "A"}
+MOCK_UNFAVOURABLE_GRADES = {"F", "D"}
 
 FRIENDLY_NAMES = {
     "ratio":  "Teacher-to-Student Ratio",
@@ -50,10 +58,10 @@ FRIENDLY_NAMES = {
 def safe_int(value, fallback=1):
     """
     Safely coerce a value to int. Handles None, NaN, and non-numeric
-    strings without raising — falls back to a sane default instead of
+    strings without raising, falling back to a sane default instead of
     crashing the whole app (this is what protects against the
     'int(nan)' ValueError that happens if a number_input is momentarily
-    cleared/invalid).
+    cleared or invalid).
     """
     try:
         if value is None:
@@ -65,14 +73,14 @@ def safe_int(value, fallback=1):
         return fallback
 
 
-# ── Page config ──────────────────────────────────────────────────────────
+# --- Page config -------------------------------------------------------
 st.set_page_config(
     page_title="NECTA Mathematics Performance Predictor",
     page_icon="📊",
     layout="centered",
 )
 
-# ── Load model artifacts ──────────────────────────────────────────────────
+# --- Load model artifacts ------------------------------------------------
 @st.cache_resource
 def load_artifacts():
     if not os.path.exists(MODEL_FILE):
@@ -81,7 +89,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-# ── Header ─────────────────────────────────────────────────────────────
+# --- Header --------------------------------------------------------------
 st.title("📊NECTA Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
@@ -103,7 +111,7 @@ accuracy     = artifacts["accuracy"]
 
 HAS_COEF = hasattr(model, "coef_")
 
-# ── Sidebar ────────────────────────────────────────────────────────────
+# --- Sidebar -------------------------------------------------------------
 with st.sidebar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
@@ -143,8 +151,9 @@ School Type:**Private = 0** and Mock Grade:**F = 0** During Encoding Process and
 But in realy world interpretations Teacher to student ratio cannot be zero.
 
 **Teacher-to-Student Ratio** `{coef[0]:.4f}`  
-A larger class reduces the log-odds of passing slightly -
+A larger class reduces the log-odds of passing slightly,
 each additional student per teacher makes it marginally harder to pass.
+A ratio of 1:101 or higher is treated as not favourable; 1:100 or lower is favourable.
 
 **School Type** `{coef[1]:.4f}`   
 **Private = 0 (Baseline)**, **Government = 1**
@@ -153,8 +162,9 @@ A negative coefficient means Government school students have
 all other variables being equal.
 
 **Mock Exam Grade** `{coef[2]:.4f}`  
-The strongest predictor. Each grade step up (F→D→C→B→A)
+The strongest predictor. Each grade step up (F to D to C to B to A)
 substantially increases the log-odds of passing NECTA.
+Grades C, B, and A are treated as favourable; F and D are treated as not favourable.
             """
         )
 
@@ -170,7 +180,7 @@ substantially increases the log-odds of passing NECTA.
         """
     )
 
-# ── Input form ─────────────────────────────────────────────────────────
+# --- Input form ----------------------------------------------------------
 st.markdown("---")
 st.subheader("Enter Student Data")
 
@@ -182,7 +192,7 @@ with col1:
         min_value=1,
         step=1,
         value=1,
-        help="Number of students per teacher.",
+        help="Number of students per teacher. 1:100 or lower is favourable; 1:101 or higher is not favourable.",
     )
     school_type = st.selectbox(
         "School Type",
@@ -192,28 +202,21 @@ with col1:
     mock_grade = st.selectbox(
         "Mock Exam Grade",
         options=["F", "D", "C", "B", "A"],
-        help="Grade obtained in the mock exam (A is best, F is worst).",
+        help="Grade obtained in the mock exam. C, B, or A is favourable; F or D is not favourable.",
     )
 st.markdown("")
 predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
 
-# ── Automatic personalised-suggestion engine ────────────────────────────
+# --- Automatic personalised-suggestion engine -----------------------------
 def compute_contributions(ratio, school_encoded, mock_encoded, model):
     """
     Work out how much each of the 3 inputs is currently pushing THIS
     student's log-odds of passing up or down, relative to the best
-    possible state for that variable. A negative contribution means the
-    variable is currently a risk factor (pulling toward FAIL); a
-    contribution of zero or higher means it's already at (or helping
-    toward) its best state.
-
-    - Teacher-to-Student Ratio: continuous. Best case is the smallest
-      possible ratio (1 : 1), so contribution = (ratio - 1) * coef.
-    - School Type: categorical (0/1). Best category is whichever
-      encoding the coefficient's sign favours.
-    - Mock Exam Grade: ordinal. Best category is grade "A", so
-      contribution is scored relative to A's encoded value.
+    possible state for that variable. Used purely to RANK factors by
+    impact (most to least). Whether a factor counts as a risk or a
+    strength is decided separately by classify_factor(), using the
+    explicit favourability rules for ratio and mock grade.
     """
     coef = model.coef_[0]
     ratio_coef, school_coef, mock_coef = coef[0], coef[1], coef[2]
@@ -235,26 +238,43 @@ def compute_contributions(ratio, school_encoded, mock_encoded, model):
     }
 
 
+def classify_factor(feature, raw_value, contribution):
+    """
+    Decide whether a factor is currently a RISK (not favourable) or a
+    STRENGTH (favourable) for this student.
+
+    - ratio: NOT favourable at 101 or higher; favourable at 100 or lower.
+    - mock:  NOT favourable for F or D; favourable for C, B, or A.
+    - school: falls back to the coefficient-based sign, since no
+      explicit rule was given for this variable.
+    """
+    if feature == "ratio":
+        return safe_int(raw_value) >= (RATIO_FAVOURABLE_MAX + 1)
+    if feature == "mock":
+        return raw_value in MOCK_UNFAVOURABLE_GRADES
+    return contribution < 0
+
+
 def suggestion_for(feature, raw_value):
     """Actionable suggestion for a factor currently working against the student."""
     table = {
         "ratio": (
-            f"The teacher-to-student ratio (1:{safe_int(raw_value)}) is high, which "
-            "typically means less individual attention per student. Advocate for "
-            "smaller class sizes, additional tutoring sessions, or peer study "
-            "groups to help offset this."
+            f"The teacher-to-student ratio (1:{safe_int(raw_value)}) is 1:101 or higher, "
+            "which is not favourable and typically means less individual attention "
+            "per student. Advocate for smaller class sizes, additional tutoring "
+            "sessions, or peer study groups to help offset this."
         ),
         "school": (
             "This school type is associated with a lower average pass rate in the "
             "training data (often linked to fewer resources or larger classes). "
             "A structured personal timetable with dedicated study hours, plus "
-            "resource-sharing with better-resourced schools, can help offset this."
+            "resource sharing with better-resourced schools, can help offset this."
         ),
         "mock": (
-            f"The mock exam grade ({raw_value}) suggests the student is not yet "
-            "fully prepared. Focus revision on the specific topics that were "
-            "missed in the mock, and practise past NECTA papers under timed "
-            "conditions."
+            f"The mock exam grade ({raw_value}) is an F or D, which is not "
+            "favourable and suggests the student is not yet fully prepared. "
+            "Focus revision on the specific topics that were missed in the mock, "
+            "and practise past NECTA papers under timed conditions."
         ),
     }
     return table.get(feature, "Review this factor with a teacher for tailored advice.")
@@ -264,8 +284,8 @@ def strength_note_for(feature, raw_value):
     """Positive reinforcement message for a factor already working in the student's favour."""
     table = {
         "ratio": (
-            f"A teacher-to-student ratio of 1:{safe_int(raw_value)} is favourable and "
-            "supports the passing prediction."
+            f"A teacher-to-student ratio of 1:{safe_int(raw_value)} is 1:100 or lower, "
+            "which is favourable and supports the passing prediction."
         ),
         "school": (
             "This school type is associated with a stronger studying environment "
@@ -273,14 +293,15 @@ def strength_note_for(feature, raw_value):
             "favour."
         ),
         "mock": (
-            f"The mock exam grade ({raw_value}) is a strong positive signal — "
-            "keep up this momentum leading into the final exam."
+            f"The mock exam grade ({raw_value}) is a C, B, or A, which is favourable "
+            "and a strong positive signal, keep up this momentum leading into the "
+            "final exam."
         ),
     }
     return table.get(feature, "This factor is currently helping.")
 
 
-# ── PDF generation ───────────────────────────────────────────────────────
+# --- PDF generation --------------------------------------------------------
 def generate_pdf(school_type, ratio, mock_grade, model_name,
                  prediction, prob_pass, prob_fail, risk_factors, positive_factors,
                  raw_values):
@@ -422,10 +443,10 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     return buffer
 
 
-# ── Prediction ───────────────────────────────────────────────────────────
+# --- Prediction ------------------------------------------------------------
 if predict_clicked:
-    # Guard against a cleared/invalid number input (None or NaN) before
-    # doing any math with it — this is what previously crashed the app.
+    # Guard against a cleared or invalid number input (None or NaN) before
+    # doing any math with it.
     if teacher_student_ratio is None or (
         isinstance(teacher_student_ratio, float) and math.isnan(teacher_student_ratio)
     ):
@@ -468,7 +489,7 @@ if predict_clicked:
         st.metric("Probability of Fail", f"{prob_fail:.5f}")
         st.progress(prob_fail)
 
-    # ── Automatic personalised suggestions ───────────────────────────────
+    # --- Automatic personalised suggestions ---------------------------------
     st.markdown("---")
     st.subheader("PERSONALISED SUGGESTIONS")
 
@@ -491,8 +512,8 @@ if predict_clicked:
         }
 
         sorted_factors   = sorted(contributions.items(), key=lambda kv: kv[1])
-        risk_factors     = [f for f in sorted_factors if f[1] < 0]
-        positive_factors = [f for f in sorted_factors if f[1] >= 0]
+        risk_factors     = [f for f in sorted_factors if classify_factor(f[0], raw_values[f[0]], f[1])]
+        positive_factors = [f for f in sorted_factors if not classify_factor(f[0], raw_values[f[0]], f[1])]
 
         overall_color = "rgba(0, 208, 132, 0.3)" if prob_pass >= 0.7 else (
             "rgba(255, 165, 0, 0.3)" if prob_pass >= 0.5 else "rgba(255, 68, 68, 0.3)"
