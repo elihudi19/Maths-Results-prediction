@@ -27,19 +27,19 @@ from reportlab.platypus import (
     HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
 )
 
-# ── Constants ────────────────────────────────────────────────────────────[[...]
+# ---- Constants ------------------------------------------------------------
 MODEL_FILE  = "model_artifacts.pkl"
-MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best → worst (display order)
+MOCK_ORDER  = ["A", "B", "C", "D", "F"]   # best to worst (display order)
 SCHOOL_MAP  = {"Government": 1, "Private": 0}
 
-# ── Page config ──────────────────────────────────────────────────────────[...]
+# ---- Page config ------------------------------------------------------------
 st.set_page_config(
     page_title="NECTA Mathematics Performance Predictor",
     page_icon="📊",
     layout="centered",
 )
 
-# ── Load model artifacts ──────────────────────────────────────────────────────
+# ---- Load model artifacts ------------------------------------------------------------
 @st.cache_resource
 def load_artifacts():
     if not os.path.exists(MODEL_FILE):
@@ -48,7 +48,7 @@ def load_artifacts():
 
 artifacts = load_artifacts()
 
-# ── Header ────────────────────────────────────────────────────────────[...[...]
+# ---- Header ------------------------------------------------------------
 st.title("📊NECTA Mathematics Performance Predictor")
 st.write(
     "Enter a student's details below to predict whether they will "
@@ -68,7 +68,7 @@ oe_mock      = artifacts["oe_mock"]
 feature_cols = artifacts["feature_cols"]
 accuracy     = artifacts["accuracy"]
 
-# ── Sidebar ──────────────────────────────────────────────────────────[...]
+# ---- Sidebar ------------------------------------------------------------
 with st.sidebar:
     st.header("ℹ️ Model Information")
     st.write(f"**Model:** {model_name}")
@@ -79,10 +79,10 @@ with st.sidebar:
     st.markdown(
         """
 **PASS**
-*Grades A, B, C and D → coded as 1*
+*Grades A, B, C and D to coded as 1*
 
 **FAIL**
-*Grade F only → coded as 0*
+*Grade F only to coded as 0*
         """
     )
 
@@ -108,7 +108,7 @@ School Type:**Private = 0** and Mock Grade:**F = 0** During Encoding Process and
 But in realy world interpretations Teacher to student ratio cannot be zero.
 
 **Teacher-to-Student Ratio** `{coef[0]:.4f}`  
-A larger class reduces the log-odds of passing slightly -
+A larger class reduces the log-odds of passing slightly,
 each additional student per teacher makes it marginally harder to pass.
 
 **School Type** `{coef[1]:.4f}`   
@@ -118,7 +118,7 @@ A negative coefficient means Government school students have
 all other variables being equal.
 
 **Mock Exam Grade** `{coef[2]:.4f}`  
-The strongest predictor. Each grade step up (F→D→C→B→A)
+The strongest predictor. Each grade step up (F to D to C to B to A)
 substantially increases the log-odds of passing NECTA.
             """
         )
@@ -135,7 +135,7 @@ substantially increases the log-odds of passing NECTA.
         """
     )
 
-# ── Input form ──────────────────────────────────────────────────────────[...]
+# ---- Input form ------------------------------------------------------------
 st.markdown("---")
 st.subheader("Enter Student Data")
 
@@ -162,7 +162,7 @@ st.markdown("")
 predict_clicked = st.button("**PREDICT**", type="primary", use_container_width=True)
 
 
-# ── PDF generation ────────────────────────────────────────��─────────────────[.[...]
+# ---- PDF generation ------------------------------------------------------------
 def generate_pdf(school_type, ratio, mock_grade, model_name,
                  prediction, prob_pass, prob_fail, message, suggestions, message_color):
     buffer = io.BytesIO()
@@ -284,11 +284,92 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
     return buffer
 
 
-# ── Helper function to determine message and color based on probability ──────
-def get_message_and_color(prob_pass):
+# ---- Dynamic, contribution-based suggestions ------------------------------------------------------------
+def describe_feature(feature, contribution, ratio, school_type, mock_grade):
     """
-    Determine student message and background color based on probability of pass.
-    
+    Turn one feature's contribution to the model score into a
+    plain-language, student-specific suggestion line.
+    """
+    if feature == "ratio":
+        if contribution < 0:
+            return (
+                f"Teacher to student ratio of 1:{int(ratio)} is currently working against "
+                "this student. Reducing effective class size through group tutoring or "
+                "extra teacher time would help."
+            )
+        return (
+            f"Teacher to student ratio of 1:{int(ratio)} is working in this student's favor. "
+            "Keep up the individual attention this student is receiving."
+        )
+
+    if feature == "school":
+        if contribution < 0:
+            return (
+                f"Attending a {school_type} school is associated with lower odds of passing "
+                "for this student. Extra revision resources, past papers and remedial classes "
+                "can help close this gap."
+            )
+        return (
+            f"Attending a {school_type} school is working in this student's favor. Continue "
+            "making full use of the resources the school already provides."
+        )
+
+    if feature == "mock":
+        if contribution < 0:
+            return (
+                f"The mock exam grade of {mock_grade} is the biggest factor pulling this "
+                "student down. Focused revision on weak topics and timed practice with past "
+                "NECTA papers is strongly recommended."
+            )
+        return (
+            f"The mock exam grade of {mock_grade} is a strong positive sign for this student. "
+            "Keep practicing past papers to hold on to this level."
+        )
+
+    return "Continue regular revision and practice."
+
+
+def build_dynamic_suggestions(model, ratio, school_encoded, mock_encoded, school_type, mock_grade):
+    """
+    Rank the three input variables by how much each one actually
+    contributes (coefficient times value) to this student's model
+    score, then generate one suggestion per variable, starting with
+    whichever variable is hurting the student the most.
+
+    Falls back to a short generic list if the loaded model has no
+    coefficients (e.g. a non-linear model).
+    """
+    if not hasattr(model, "coef_"):
+        return [
+            "1. Focus on understanding weak concept areas in Mathematics.",
+            "2. Increase study time and consistency in revision.",
+            "3. Practice past NECTA papers regularly under timed conditions.",
+        ]
+
+    coef = model.coef_[0]
+    contributions = [
+        ("ratio",  coef[0] * ratio),
+        ("school", coef[1] * school_encoded),
+        ("mock",   coef[2] * mock_encoded),
+    ]
+    contributions.sort(key=lambda item: item[1])  # weakest (most negative) first
+
+    lines = []
+    for i, (feature, value) in enumerate(contributions, start=1):
+        lines.append(f"{i}. {describe_feature(feature, value, ratio, school_type, mock_grade)}")
+    return lines
+
+
+def get_message_and_suggestions(prob_pass, model, ratio, school_encoded, mock_encoded,
+                                school_type, mock_grade):
+    """
+    Determine student message, header color, and suggestions.
+
+    The overall message and color still depend on the probability
+    band, but the suggestions themselves are now generated per
+    student from the actual contribution of each variable instead
+    of being a fixed static list.
+
     Probability ranges:
     - 0.7 to 1.0: Good job! Maintain a progress
     - 0.5 to 0.69: Study hard to maintain Progress
@@ -299,42 +380,25 @@ def get_message_and_color(prob_pass):
         color_hex = "rgba(0, 208, 132, 0.3)"  # Green
         pdf_color = colors.HexColor("#00D084")  # Solid green for PDF
         suggestions_header = "Suggestions to maintain and improve performance:"
-        suggestion_lines = [
-            "1. Keep up current study discipline and avoid overconfidence.",
-            "2. Engage in peer tutoring to reinforce personal understanding.",
-            "3. Teachers should track progress through regular short tests.",
-            "4. Attempt advanced NECTA questions to maximise the final grade.",
-            "5. Maintain good health and sleep habits during the exam period.",
-        ]
     elif prob_pass >= 0.5:
         message = "Study hard to maintain Progress"
         color_hex = "rgba(255, 165, 0, 0.3)"  # Orange
         pdf_color = colors.HexColor("#FFA500")  # Solid orange for PDF
         suggestions_header = "Suggestions to improve and maintain performance:"
-        suggestion_lines = [
-            "1. Focus on understanding weak concept areas in Mathematics.",
-            "2. Increase study time and consistency in revision.",
-            "3. Work with classmates on challenging topics through group study.",
-            "4. Practice past NECTA papers regularly under timed conditions.",
-            "5. Seek help from teachers for areas of difficulty.",
-        ]
     else:
         message = "You are at risk, Study hard."
         color_hex = "rgba(255, 68, 68, 0.3)"  # Red
         pdf_color = colors.HexColor("#FF4444")  # Solid red for PDF
         suggestions_header = "Suggestions to improve performance:"
-        suggestion_lines = [
-            "1. Enrol in remedial Mathematics classes focusing on weak topic areas.",
-            "2. Teachers should use group assignments to keep large classes engaged.",
-            "3. School should create a textbook-sharing or library rotation system.",
-            "4. Student should practise past NECTA papers under timed conditions.",
-            "5. Parents/guardians should be informed and support a structured home-study plan.",
-        ]
-    
+
+    suggestion_lines = build_dynamic_suggestions(
+        model, ratio, school_encoded, mock_encoded, school_type, mock_grade
+    )
+
     return message, color_hex, suggestions_header, suggestion_lines, pdf_color
 
 
-# ── Prediction ──────────────────────────────────────────────────────────[...]
+# ---- Prediction ------------------------------------------------------------
 if predict_clicked:
     school_encoded = SCHOOL_MAP[school_type]
     mock_encoded   = int(
@@ -371,12 +435,17 @@ if predict_clicked:
         st.metric("Probability of Fail", f"{prob_fail:.5f}")
         st.progress(prob_fail)
 
-    # ── Suggestions ────────────────────────────────────────────────────────[...]
+    # ---- Suggestions ------------------------------------------------------------
     st.markdown("---")
     st.subheader("SUGGESTIONS")
 
-    # Get message, color, and suggestions based on probability score
-    message, color_hex, pdf_header, suggestion_lines, pdf_color = get_message_and_color(prob_pass)
+    # Message and color are still probability-based, but the
+    # suggestions are now generated from this student's own
+    # variable contributions.
+    message, color_hex, pdf_header, suggestion_lines, pdf_color = get_message_and_suggestions(
+        prob_pass, model, teacher_student_ratio, school_encoded, mock_encoded,
+        school_type, mock_grade,
+    )
 
     suggestions_html = "<br>".join(suggestion_lines)
 
