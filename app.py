@@ -285,45 +285,30 @@ def generate_pdf(school_type, ratio, mock_grade, model_name,
 
 
 # ---- Dynamic, contribution-based suggestions ------------------------------------------------------------
-def describe_feature(feature, contribution, ratio, school_type, mock_grade):
+def describe_weak_feature(feature, ratio, school_type, mock_grade):
     """
-    Turn one feature's contribution to the model score into a
-    plain-language, student-specific suggestion line.
+    Plain-language, student-specific suggestion for a variable that is
+    actively pulling this student toward failing.
     """
     if feature == "ratio":
-        if contribution < 0:
-            return (
-                f"Teacher to student ratio of 1:{int(ratio)} is currently working against "
-                "this student. Reducing effective class size through group tutoring or "
-                "extra teacher time would help."
-            )
         return (
-            f"Teacher to student ratio of 1:{int(ratio)} is working in this student's favor. "
-            "Keep up the individual attention this student is receiving."
+            f"Teacher to student ratio of 1:{int(ratio)} is currently working against "
+            "this student. Reducing effective class size through group tutoring or "
+            "extra teacher time would help."
         )
 
     if feature == "school":
-        if contribution < 0:
-            return (
-                f"Attending a {school_type} school is associated with lower odds of passing "
-                "for this student. Extra revision resources, past papers and remedial classes "
-                "can help close this gap."
-            )
         return (
-            f"Attending a {school_type} school is working in this student's favor. Continue "
-            "making full use of the resources the school already provides."
+            f"Attending a {school_type} school is associated with lower odds of passing "
+            "for this student. Extra revision resources, past papers and remedial classes "
+            "can help close this gap."
         )
 
     if feature == "mock":
-        if contribution < 0:
-            return (
-                f"The mock exam grade of {mock_grade} is the biggest factor pulling this "
-                "student down. Focused revision on weak topics and timed practice with past "
-                "NECTA papers is strongly recommended."
-            )
         return (
-            f"The mock exam grade of {mock_grade} is a strong positive sign for this student. "
-            "Keep practicing past papers to hold on to this level."
+            f"The mock exam grade of {mock_grade} is the biggest factor pulling this "
+            "student down. Focused revision on weak topics and timed practice with past "
+            "NECTA papers is strongly recommended."
         )
 
     return "Continue regular revision and practice."
@@ -331,13 +316,18 @@ def describe_feature(feature, contribution, ratio, school_type, mock_grade):
 
 def build_dynamic_suggestions(model, ratio, school_encoded, mock_encoded, school_type, mock_grade):
     """
-    Rank the three input variables by how much each one actually
-    contributes (coefficient times value) to this student's model
-    score, then generate one suggestion per variable, starting with
-    whichever variable is hurting the student the most.
+    Look at each variable's actual contribution (coefficient times
+    value) to this student's model score, and generate a suggestion
+    ONLY for the variable(s) that are actually reaching the point of
+    pulling the student toward failing (a negative contribution).
+
+    Variables that are already working in the student's favor are
+    left out, since they do not need fixing. Ordered so the variable
+    causing the most damage appears first.
 
     Falls back to a short generic list if the loaded model has no
-    coefficients (e.g. a non-linear model).
+    coefficients (e.g. a non-linear model), since contribution signs
+    cannot be computed in that case.
     """
     if not hasattr(model, "coef_"):
         return [
@@ -352,11 +342,21 @@ def build_dynamic_suggestions(model, ratio, school_encoded, mock_encoded, school
         ("school", coef[1] * school_encoded),
         ("mock",   coef[2] * mock_encoded),
     ]
-    contributions.sort(key=lambda item: item[1])  # weakest (most negative) first
+
+    # Only keep variables that are actually causing/contributing to a fail
+    weak_points = [item for item in contributions if item[1] < 0]
+    weak_points.sort(key=lambda item: item[1])  # most damaging first
+
+    if not weak_points:
+        return [
+            "1. Teacher to student ratio, school type and mock exam grade are all "
+            "currently working in this student's favor. Keep up the same routine "
+            "and consistency to stay on track."
+        ]
 
     lines = []
-    for i, (feature, value) in enumerate(contributions, start=1):
-        lines.append(f"{i}. {describe_feature(feature, value, ratio, school_type, mock_grade)}")
+    for i, (feature, _value) in enumerate(weak_points, start=1):
+        lines.append(f"{i}. {describe_weak_feature(feature, ratio, school_type, mock_grade)}")
     return lines
 
 
