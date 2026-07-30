@@ -9,11 +9,6 @@ suggestion is generated dynamically from how much that student's own inputs
 are pulling their prediction up or down, instead of a single static message
 picked from a probability bucket.
 
-Favourability rules applied explicitly:
-    - Teacher-to-Student Ratio: 1:100 or lower is favourable,
-      1:101 or higher is NOT favourable.
-    - Mock Exam Grade: C, B, or A is favourable; F or D is NOT favourable.
-
 Run ONCE before launching:
     python train_model.py
 
@@ -259,19 +254,19 @@ def suggestion_for(feature, raw_value):
     """Actionable suggestion for a factor currently working against the student."""
     table = {
         "ratio": (
-            f"The teacher-to-student ratio (1:{safe_int(raw_value)}) is 1:101 or higher, "
+            f"The teacher-to-student ratio (1:{safe_int(raw_value)}) is very higher, "
             "which is not favourable and typically means less individual attention "
             "per student. Advocate for smaller class sizes, additional tutoring "
             "sessions, or peer study groups to help offset this."
         ),
         "school": (
             "This school type is associated with a lower average pass rate in the "
-            "training data (often linked to fewer resources or larger classes). "
+            " (often linked to fewer resources or larger classes). "
             "A structured personal timetable with dedicated study hours, plus "
             "resource sharing with better-resourced schools, can help offset this."
         ),
         "mock": (
-            f"The mock exam grade ({raw_value}) is an F or D, which is not "
+            f"The mock exam grade is ({raw_value}), which is not "
             "favourable and suggests the student is not yet fully prepared. "
             "Focus revision on the specific topics that were missed in the mock, "
             "and practise past NECTA papers under timed conditions."
@@ -284,16 +279,16 @@ def strength_note_for(feature, raw_value):
     """Positive reinforcement message for a factor already working in the student's favour."""
     table = {
         "ratio": (
-            f"A teacher-to-student ratio of 1:{safe_int(raw_value)} is 1:100 or lower, "
+            f"A teacher-to-student ratio of 1:{safe_int(raw_value)} is lower, "
             "which is favourable and supports the passing prediction."
         ),
         "school": (
             "This school type is associated with a stronger studying environment "
-            "in the training data, which is currently working in the student's "
+            ", which is currently working in the student's "
             "favour."
         ),
         "mock": (
-            f"The mock exam grade ({raw_value}) is a C, B, or A, which is favourable "
+            f"The mock exam grade is ({raw_value}), which is favourable "
             "and a strong positive signal, keep up this momentum leading into the "
             "final exam."
         ),
